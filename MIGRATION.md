@@ -3,8 +3,8 @@
 ## 顺序
 
 1. 备份数据库/Storage，在隔离副本演练；暂停旧客户端写入。
-2. 新库运行根目录 supabase.sql，然后 202609100001_v050_foundation.sql、202609100002_task_edit.sql。
-3. 旧 v0.4.3 库只跑两份 migration；不要重新执行旧 supabase.sql。每份迁移各自事务执行，文件不是可重复运行脚本。
+2. 新库运行根目录 supabase.sql，然后 202609100001_v050_foundation.sql、202609100002_task_edit.sql、202609100003_message_inbox.sql。
+3. 旧 v0.4.3 库依序跑三份 migration；不要重新执行旧 supabase.sql。每份迁移各自事务执行，文件不是可重复运行脚本。
 
 ## PostGIS 与旧坐标
 
@@ -62,3 +62,8 @@ on conflict do nothing;
 ## 验收门槛
 
 按 TESTING.md 验证真实 PostGIS 边界和 GIST EXPLAIN、独立请求抢最后名额、未认证发布/自我认证/系统消息伪造被拒绝、第三人无法访问执照、管理员审核有审计、旧任务复审后可被查询。没有真实环境通过记录前不能标为生产可用。
+
+## v0.5.0 → v0.5.1 消息列表升级
+
+已运行前两份迁移的库，只执行 `202609100003_message_inbox.sql`。新增只读 RPC `get_message_inbox(p_query)`，只向报名参与方返回对方公开名称/头像、任务摘要、最新消息、真实未读总数；匿名不可调用。没有删除、更改历史业务数据和权限状态机。
+本地 LocalStorage 键保持不变，不清空原消息。会话按接单记录区分，同一对象不同任务各有一条会话，便于追踪约定。通知页排除重复的聊天通知。

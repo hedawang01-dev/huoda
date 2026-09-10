@@ -4,7 +4,7 @@
 
 Windows / Node.js 22.14.0 / 本机 Chromium，390×844 移动端；PGlite 0.3.14 PostgreSQL 内核。
 
-2026-09-10 最终运行：`npm run check` 25 个文件通过；`npm test` 17 项通过、0 失败；320/390/480/1440 宽度检查均无页面横向溢出。
+2026-09-10 最终运行：`npm run check` 28 个文件通过；`npm test` 19 项通过、0 失败；320/390/480/1440 宽度检查均无页面横向溢出。
 
 先启动 `npm start`，在另一个终端运行 `npm run check` 与 `npm test`。数据库测试独立运行 `node --test tests/database.test.cjs`，不依赖 HTTP 服务。BROWSER_PATH 可以指定 Chrome 可执行文件。
 
@@ -12,7 +12,7 @@ Windows / Node.js 22.14.0 / 本机 Chromium，390×844 移动端；PGlite 0.3.14
 
 | 文件 | 内容 | 验证边界 |
 |---|---|---|
-| database.test.cjs | 两份 migration、13 个子场景、RLS/RPC/容量/私有对象/评价/seed 幂等/分页 | SQL 权限和 PLpgSQL 真实执行；空间函数替身，不是 PostGIS 距离验收 |
+| database.test.cjs | 三份 migration、14 个子场景、RLS/RPC/容量/私有对象/评价/seed 幂等/分页 | SQL 权限和 PLpgSQL 真实执行；空间函数替身，不是 PostGIS 距离验收 |
 | browser.test.cjs | 游客→收藏→登录→报名→商家确认→聊天已读→完成→双方评价→信用页→附近 | 本地 adapter 的真实浏览器流程 |
 | moderation-browser.test.cjs | 新商家→选文件→独立后台认证→发布待审→审核→举报处理→审计 | 本地审核模拟器；不代表云端上传 |
 | cloud-browser.test.cjs | 附带的真实 Supabase SDK 发 RPC、20 条分页、总数、防抖、3km定位、失败不降级 | HTTP 返回值为测试模拟；不代表真实 Supabase 已上线 |
@@ -65,3 +65,8 @@ Windows / Node.js 22.14.0 / 本机 Chromium，390×844 移动端；PGlite 0.3.14
 ## 当前不能宣称完成的验收
 
 目标 Supabase 未提供，真实地理距离/查询计划、跨连接事务竞态、邮件、Realtime、Storage上传与 Edge Function 部署均未真实运行。本地 SQL 测试不替代这些验收。已提供 deploy、migration、seed 和 opt-in 并发测试；在隔离环境通过后才能标为正式可用。
+
+## v0.5.1 消息页回归
+
+messages-browser.test.cjs 实际验证：游客消息入口、默认聊天页、按时间排序、名称/任务/消息摘要、未读角标不重复、未读筛选、搜索公司及旧消息、直接聊天/返回、打开后已读、通知单独已读、我的接单入口、跨标签新消息实时置顶，以及 320/390/480 宽度。
+数据库新增 inbox 场景，验证对方身份、消息摘要、搜索、未读更新和匿名/第三方隔离。截图 test-results/06-messages-v051.png 为自动化隔离测试的演示数据，不含真实联系人。

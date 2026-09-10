@@ -42,7 +42,7 @@ const state = {
   advancedFilters:{...FILTER_DEFAULTS}, filterDraft:{...FILTER_DEFAULTS},
   selectedApplication:null, publishTab:'new', orderTab:'worker', adminTab:'verify',
   user:null, profile:null, tasks:[], applications:[], messages:[], reports:[],
-  location:null, favorites:loadFavorites(), notifications:[], reviews:[], ownTasks:[], feedTotal:0, nextCursor:null, feedLoading:false, loading:true
+  inbox:[], inboxQuery:'', inboxFilter:'all', messageTab:'chats', chatUnread:0, noticeUnread:0, location:null, favorites:loadFavorites(), notifications:[], reviews:[], ownTasks:[], feedTotal:0, nextCursor:null, feedLoading:false, loading:true
 };
 
 
@@ -118,7 +118,7 @@ async function hydrateUser(user){return H.services.auth.hydrate(user);}
 async function loadData(){
  if(CLOUD_ENABLED){
   if(state.user)await hydrateUser(state.user);
-  await reloadFeed(false);
+  if(!['messages','chat','notifications'].includes(state.route))await reloadFeed(false);
   if(state.user){
    const id=state.user.id;
    const [a,r,n,rv,own,unread]=await Promise.all([
@@ -136,6 +136,7 @@ async function loadData(){
  }else{
   const db=localDb();state.tasks=db.tasks.map(H.task);state.ownTasks=state.tasks.filter(t=>t.owner_id===state.user?.id);state.applications=db.applications.filter(a=>state.user&&[a.worker_id,a.merchant_id].includes(state.user.id));const ids=new Set(state.applications.map(a=>a.id));state.messages=db.messages.filter(m=>ids.has(m.application_id));state.reports=db.reports.filter(r=>r.reporter_id===state.user?.id);state.notifications=db.notifications.filter(n=>n.user_id===state.user?.id);state.reviews=db.reviews.filter(r=>r.reviewer_id===state.user?.id);state.unreadCount=state.notifications.filter(n=>!n.read_at).length;state.favorites=await H.services.favorite.list();if(state.user){const fresh=db.users.find(u=>u.id===state.user.id);if(fresh){state.user=fresh;state.profile=enrichUser(fresh);}}
  }
+ await H.services.inbox.load();
  if(state.selectedApplication)state.selectedApplication=state.applications.find(a=>a.id===state.selectedApplication.id)||null;
 }
 async function reloadFeed(paint=true,more=false){
@@ -149,14 +150,17 @@ async function loadMoreTasks(){if(!state.feedLoading&&state.nextCursor!==null)aw
 
 function render(){
   updateHeader();
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.route===state.route));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.route===state.route||(b.dataset.route==='messages'&&['chat','notifications'].includes(state.route))));
   if(state.loading){app.innerHTML='<div class="skeleton-page"><div class="skeleton h"></div><div class="skeleton"></div><div class="skeleton"></div></div>';return}
-  const routes={home,publish,orders,profile,favorites:favoritesPage,detail:()=>detail(state.selectedTask),chat,admin,notifications:notificationsPage,publicProfile:publicProfilePage};
+  const routes={home,publish,orders,profile,favorites:favoritesPage,detail:()=>detail(state.selectedTask),chat,admin,messages:messagesPage,notifications:notificationsPage,publicProfile:publicProfilePage};
   (routes[state.route]||home)();
 }
 
 function updateHeader(){
-  const bell=document.getElementById('notificationBtn');if(bell){bell.innerHTML=`♧${state.unreadCount?`<span class="unread-badge">${state.unreadCount>99?'99+':state.unreadCount}</span>`:''}`;bell.setAttribute('aria-label',`通知中心，${state.unreadCount||0}条未读`);}const hint=document.getElementById('modeHint');const btn=document.getElementById('accountBtn');const city=document.getElementById('cityBtn');
+  document.querySelector('.app-shell').classList.toggle('inbox-shell',['messages','chat','notifications'].includes(state.route));
+  const total=(state.chatUnread||0)+(state.noticeUnread||0),badge=document.getElementById('messageNavBadge');if(badge){badge.hidden=!total;badge.textContent=total>99?'99+':total;}const nav=document.querySelector('[data-route="messages"]');if(nav)nav.setAttribute('aria-label',`消息${total?`，${total}条未读`:''}`);
+
+  const bell=document.getElementById('notificationBtn');if(bell){bell.innerHTML=`♧${total?`<span class="unread-badge">${total>99?'99+':total}</span>`:''}`;bell.setAttribute('aria-label',`通知中心，${state.noticeUnread||0}条未读`);}const hint=document.getElementById('modeHint');const btn=document.getElementById('accountBtn');const city=document.getElementById('cityBtn');
   hint.textContent=CLOUD_ENABLED?'云端测试 · Supabase 数据模式':'本地演示 · 数据自动保存';
   btn.textContent=(state.profile?.name||'游客').slice(0,1);
   city.textContent=`${state.profile?.city||CFG.CITY||'广州'} ▾`;
@@ -328,19 +332,36 @@ async function completeApplication(appId){try{await H.services.application.trans
 
 async function cancelApplication(appId){try{await H.services.application.transition(appId,'cancelled');await loadData();render();toast('状态已更新');}catch(e){toast(H.errorText(e));}}
 
-async function openChat(appId){if(!requireLogin(()=>openChat(appId)))return;const a=state.applications.find(x=>x.id===appId);if(!a||!['accepted','completed'].includes(a.status)){toast('商家确认后才能发起聊天');return;}try{state.selectedApplication=a;state.route='chat';await H.services.message.read(appId);await loadData();render();}catch(e){toast(H.errorText(e));}}
-
-function chat(){
-  const a=state.selectedApplication;if(!a){go('orders');return}const t=getTask(a);const mine=String(a.worker_id)===String(state.user?.id);const msgs=state.messages.filter(m=>String(m.application_id)===String(a.id));
-  app.innerHTML=`<section class="chat-shell"><div class="chat-head"><button class="back" onclick="go('orders')">← 接单</button><div><h3>${mine?'联系商家':'联系接单者'}</h3><div class="muted">${esc(t?.title||'任务')}</div></div><span class="status ok">站内沟通</span></div><div class="chat-safe">安全提醒：不要在聊天中接受押金、刷流水、代收转账、借卡等要求。纠纷时站内聊天记录可作为平台审核依据。</div><div class="chat-list">${msgs.length?msgs.map(m=>`<div class="msg-row ${String(m.sender_id)===String(state.user.id)?'mine':''}"><div class="msg">${m.message_type==='system'?'<small>系统通知 · </small>':''}${esc(m.content)}<div class="msg-time">${formatTime(m.created_at)} ${String(m.sender_id)===String(state.user.id)&&m.message_type!=='system'?(m.read_at?'已读':'未读'):''}</div></div></div>`).join(''):'<div class="empty">还没有消息。可以先确认到场时间、交付标准或需要携带的物品。</div>'}</div><div class="chat-input"><input id="chatText" placeholder="输入消息" onkeydown="if(event.key==='Enter')sendMessage()"><button onclick="sendMessage()">发送</button></div></section>`;
+async function openChat(appId){
+ if(!requireLogin(()=>openChat(appId)))return;
+ const request=H.chatSequence=(H.chatSequence||0)+1;
+ state.route='chat';updateHeader();app.innerHTML='<div class="inbox-empty">正在打开会话…</div>';
+ try{const data=await H.services.inbox.conversation(appId);if(request!==H.chatSequence||state.route!=='chat')return;
+  if(!['accepted','completed'].includes(data.application.status)&&!data.messages.some(m=>m.message_type!=='system'))throw new Error('商家确认后才能聊天');
+  state.selectedApplication=data.application;state.messages=data.messages;
+  const peerId=data.application.worker_id===state.user.id?data.application.merchant_id:data.application.worker_id;
+  const cached=state.inbox.find(c=>c.application_id===appId);const peer=cached?null:await H.services.merchant.publicProfile(peerId,data.application.worker_id===state.user.id?'merchant':'worker');
+  if(request!==H.chatSequence||state.route!=='chat')return;
+  state.chatPeer=cached?.peer_name||peer?.name||'工作搭子';
+  await H.services.message.read(appId);const read=await H.services.inbox.conversation(appId);
+  if(request!==H.chatSequence||state.route!=='chat')return;state.messages=read.messages;await H.services.inbox.load();render();scrollChatToLatest();
+ }catch(e){if(state.route==='chat'){go('messages');toast(H.errorText(e));}}
 }
-async function sendMessage(){const content=document.getElementById('chatText')?.value.trim();if(!content||!state.selectedApplication)return;try{await H.services.message.send(state.selectedApplication.id,content);await loadData();chat();document.getElementById('chatText')?.focus();}catch(e){toast(H.errorText(e));}}
+function scrollChatToLatest(){requestAnimationFrame(()=>document.getElementById('chatEnd')?.scrollIntoView({block:'end'}));}
+function chat(){
+ const a=state.selectedApplication;if(!a){go('messages');return;}const t=getTask(a),canSend=['accepted','completed'].includes(a.status),msgs=state.messages.filter(m=>m.application_id===a.id);
+ app.innerHTML=`<section class="chat-shell direct-chat"><div class="chat-head"><button class="back" onclick="go('messages')">← 消息</button><div class="chat-peer"><h3>${esc(state.chatPeer||t?.company_name||'工作搭子')}</h3><div class="muted">${esc(t?.title||'任务沟通')}</div></div><button class="text-btn" onclick="go('orders')">接单记录</button></div><div class="chat-safe">请在站内确认工作安排，不要支付押金或帮助他人转账。</div><div class="chat-list">${msgs.length?msgs.map(m=>m.message_type==='system'?`<div class="chat-system">${esc(m.content)}</div>`:`<div class="msg-row ${m.sender_id===state.user.id?'mine':''}"><div class="msg">${esc(m.content)}<div class="msg-time">${formatTime(m.created_at)} ${m.sender_id===state.user.id?(m.read_at?'已读':'未读'):''}</div></div></div>`).join(''):'<div class="empty">先确认一下到场时间或交付要求吧。</div>'}<div id="chatEnd"></div></div>${canSend?'<div class="chat-input"><input id="chatText" maxlength="2000" aria-label="聊天内容" placeholder="发消息，直接聊聊这单活" onkeydown="if(event.key===\'Enter\'&&!event.isComposing)sendMessage()"><button onclick="sendMessage()">发送</button></div>':'<p class="chat-closed">本次合作已结束，可以查看历史聊天。</p>'}</section>`;
+}
+async function sendMessage(){
+ const input=document.getElementById('chatText'),content=input?.value.trim(),a=state.selectedApplication;if(!content||!a||H.sendingChat)return;H.sendingChat=true;
+ try{await H.services.message.send(a.id,content);const data=await H.services.inbox.conversation(a.id);await H.services.inbox.load();if(state.route==='chat'&&state.selectedApplication?.id===a.id){const draft=document.getElementById('chatText')?.value;state.messages=data.messages;chat();if(draft&&draft.trim()!==content)document.getElementById('chatText').value=draft;updateHeader();document.getElementById('chatText')?.focus();scrollChatToLatest();}}catch(e){toast(H.errorText(e));}finally{H.sendingChat=false;}
+}
 
 function profile(){
   if(!state.user){app.innerHTML=`<section class="welcome-card"><div class="welcome-logo">H</div><h2>登录活搭</h2><p>保存接单记录、在线聊天、发布一单活，并查看每一步状态。</p><button class="primary accent" onclick="showAuth()">登录 / 注册</button><button class="ghost" onclick="demoLogin('worker')">一键体验求职者</button><button class="ghost" onclick="demoLogin('merchant')">一键体验已认证商家</button></section>`;return}
   const done=state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)&&a.status==='completed').length;const doing=state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)&&['applied','accepted'].includes(a.status)).length;const v=state.profile?.verification_status||'unverified';
   app.innerHTML=`<section class="profile-head"><div class="profile-row"><div><div class="profile-name">${esc(state.profile?.name||'用户')}</div><div class="profile-sub">${esc(state.profile?.city||CFG.CITY||'广州')} · ${esc((state.profile?.skills||[]).join(' / ')||'完善技能后匹配更准')}</div></div><span class="cloud-pill">${CLOUD_ENABLED?'云端':'本地'}账户</span></div><div class="stats"><div class="stat"><b>${doing}</b>进行中</div><div class="stat"><b>${done}</b>已完成</div><div class="stat"><b>${state.reports.filter(r=>r.status==='open').length}</b>举报处理中</div></div></section>
-  <section class="menu"><button class="menu-item" onclick="go('notifications')"><span>消息与通知</span><span class="menu-right">${state.unreadCount||0} 条未读 ›</span></button><button class="menu-item" onclick="openPublicProfile('${esc(state.user.id)}','worker')"><span>我的公开档案</span><span>›</span></button><button class="menu-item" onclick="editProfile()"><span>个人资料</span><span class="menu-right">${state.profile?.role==='merchant'?'商家':'求职者'} ›</span></button><button class="menu-item" onclick="go('favorites')"><span>我的收藏</span><span class="menu-right">${state.favorites?.length||0} 个 ›</span></button><button class="menu-item" onclick="editSkills()"><span>技能标签</span><span class="menu-right">${esc((state.profile?.skills||[]).slice(0,2).join(' / ')||'去完善')} ›</span></button><button class="menu-item" onclick="showVerification()"><span>商家认证</span><span class="verify-pill ${v==='verified'?'ok':v==='pending'?'wait':v==='rejected'?'bad':''}">${verificationLabel(v)} ›</span></button><button class="menu-item" onclick="showLocationPicker()"><span>位置与附近兼职</span><span class="menu-right">${state.location?esc(state.location.label):'未授权'} ›</span></button><button class="menu-item" onclick="toast('真实资金结算将在支付与合规方案确定后接入')"><span>收入与结算</span><span class="menu-right">暂未接支付 ›</span></button><button class="menu-item danger" onclick="logout()"><span>退出登录</span><span>›</span></button></section>`;
+  <section class="menu"><button class="menu-item" onclick="go('orders')"><span>接单与报名记录</span><span class="menu-right">进度、确认、完成 ›</span></button><button class="menu-item" onclick="go('messages')"><span>我的消息</span><span class="menu-right">${(state.chatUnread||0)+(state.noticeUnread||0)} 条未读 ›</span></button><button class="menu-item" onclick="openPublicProfile('${esc(state.user.id)}','worker')"><span>我的公开档案</span><span>›</span></button><button class="menu-item" onclick="editProfile()"><span>个人资料</span><span class="menu-right">${state.profile?.role==='merchant'?'商家':'求职者'} ›</span></button><button class="menu-item" onclick="go('favorites')"><span>我的收藏</span><span class="menu-right">${state.favorites?.length||0} 个 ›</span></button><button class="menu-item" onclick="editSkills()"><span>技能标签</span><span class="menu-right">${esc((state.profile?.skills||[]).slice(0,2).join(' / ')||'去完善')} ›</span></button><button class="menu-item" onclick="showVerification()"><span>商家认证</span><span class="verify-pill ${v==='verified'?'ok':v==='pending'?'wait':v==='rejected'?'bad':''}">${verificationLabel(v)} ›</span></button><button class="menu-item" onclick="showLocationPicker()"><span>位置与附近兼职</span><span class="menu-right">${state.location?esc(state.location.label):'未授权'} ›</span></button><button class="menu-item" onclick="toast('真实资金结算将在支付与合规方案确定后接入')"><span>收入与结算</span><span class="menu-right">暂未接支付 ›</span></button><button class="menu-item danger" onclick="logout()"><span>退出登录</span><span>›</span></button></section>`;
 }
 
 function showAuth(after){
@@ -356,7 +377,7 @@ function closeModal(e){if(e&&e.target!==e.currentTarget)return;modalRoot.innerHT
 async function demoLogin(role='worker'){
   if(CLOUD_ENABLED){toast('云端模式请用邮箱注册；演示账号只用于本地模式');return}const db=localDb(),id=role==='merchant'?'merchant-demo':'worker-demo';let u=db.users.find(x=>x.id===id);if(!u){u=enrichUser({id,name:role==='merchant'?'南屿电商（演示）':'小何（演示）',email:`${id}@demo.local`,role,city:CFG.CITY||'广州',skills:role==='worker'?['PS','电商设计']:[],verification_status:role==='merchant'?'verified':'unverified',company_name:role==='merchant'?'南屿电商':'',active:true});db.users.push(u)}if(role==='merchant'){u.role='merchant';u.verification_status='verified';u.company_name=u.company_name||'南屿电商'}db.users.forEach(x=>x.active=x.id===id);saveLocal(db);state.user=u;state.profile=u;closeModal();await H.services.favorite.merge();await loadData();render();toast(role==='merchant'?'已切换为已认证演示商家':'已切换为演示求职者');runAfterAuth();
 }
-async function logout(){state.orderTab='worker';window._afterAuth=null;state.selectedApplication=null;state.selectedTask=null;if(CLOUD_ENABLED)await sb.auth.signOut();else{const db=localDb();db.users.forEach(x=>x.active=false);saveLocal(db);state.user=null;state.profile=null;state.favorites=loadFavorites();await loadData();render()}toast('已退出')}
+async function logout(){H.inboxSequence=(H.inboxSequence||0)+1;state.inboxQuery='';state.inboxFilter='all';state.messageTab='chats';state.inbox=[];state.chatUnread=0;state.noticeUnread=0;state.orderTab='worker';window._afterAuth=null;state.selectedApplication=null;state.selectedTask=null;if(CLOUD_ENABLED)await sb.auth.signOut();else{const db=localDb();db.users.forEach(x=>x.active=false);saveLocal(db);state.user=null;state.profile=null;state.favorites=loadFavorites();await loadData();render()}toast('已退出')}
 function editProfile(){const p=state.profile||{};modalRoot.innerHTML=`<div class="modal-backdrop"><div class="modal"><button class="modal-x" onclick="closeModal()">×</button><h2>个人资料</h2><div class="field"><label>昵称</label><input id="eName" value="${esc(p.name||'')}"></div><div class="field"><label>身份</label><select id="eRole"><option value="worker" ${p.role!=='merchant'?'selected':''}>求职者</option><option value="merchant" ${p.role==='merchant'?'selected':''}>商家</option></select></div><div class="field"><label>城市</label><input id="eCity" value="${esc(p.city||CFG.CITY||'广州')}"></div><div class="field"><label>个人简介</label><textarea id="eBio" maxlength="1000">${esc(p.bio||'')}</textarea></div><div class="field"><label>头像 HTTPS 地址（可选）</label><input id="eAvatar" value="${esc(p.avatar_url||'')}" placeholder="https://..."></div><button class="primary" onclick="saveProfile()">保存</button></div></div>`}
 async function saveProfile(){try{await H.services.auth.save({name:document.getElementById('eName').value.trim()||'用户',current_mode:document.getElementById('eRole').value,city:document.getElementById('eCity').value.trim()||'广州',bio:document.getElementById('eBio').value.trim(),avatar_url:document.getElementById('eAvatar').value.trim()});closeModal();await loadData();render();toast('资料已保存');}catch(e){toast(H.errorText(e));}}
 
@@ -435,7 +456,7 @@ async function openTask(id){try{state.selectedTask=await H.services.task.get(id)
 
 function setPublishTab(t){state.publishTab=t;render()}
 function setOrderTab(t){state.orderTab=t;render()}
-function go(route){state.route=route;render()}
+function go(route){if(route==='notifications'){state.messageTab='notices';route='messages';}else if(route==='messages')state.messageTab='chats';state.route=route;render();if(route==='messages')refreshMessages();}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2100)}
 
 Object.assign(window,{go,setFilter,openTask,applyTask,createTask,setPublishTab,setOrderTab,merchantDecision,completeApplication,cancelApplication,openChat,sendMessage,showAuth,authSubmit,closeModal,demoLogin,logout,editProfile,saveProfile,editSkills,saveSkills,showVerification,submitVerification,showReport,submitReport,showAdvancedFilters,pickAdvancedFilter,resetAdvancedFilters,applyAdvancedFilters,showLocationPicker,requestLocation,useDemoLocation,clearLocation,searchNow,clearSearch,setSort,toggleFavorite,favoritesPage,toast});

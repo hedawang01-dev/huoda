@@ -1,6 +1,18 @@
-# 活搭 HUODA v0.5.0
+# 活搭 HUODA v0.5.1
 
 基于 v0.4.3 渐进升级的移动端 Web App，保留首页、Logo、口号、任务卡和墨黑 / 暖白 / 青柠绿品牌。原版目录未修改。
+
+## v0.5.1 消息入口改版
+
+- 底部“接单”改为“消息”，默认就是会话列表；点击整行直接聊天。
+- 会话显示对方、关联任务、最后消息、时间与未读数，按最新消息排序。
+- 支持联系人 / 公司 / 全部聊天记录关键词搜索，以及全部 / 未读 / 进行中 / 已完成筛选。
+- “聊天”和“通知”分开，底部角标不重复计算同一条聊天通知。
+- 报名、确认、完成仍在“我的 → 接单与报名记录”；消息页也提供快捷入口。
+- 聊天返回消息列表，保留筛选；已有历史的结束合作可阅读聊天，但不能继续发送。
+- 云端新增 get_message_inbox RPC，用完整消息记录计算最新摘要和未读数，不受最近 200 条聊天显示上限影响。
+
+如果云端已部署 v0.5.0，**仅追加运行 `202609100003_message_inbox.sql`**，不要重跑此前迁移。本地模式直接刷新页面，原本地数据继续保留。
 
 ## 立即运行
 
@@ -51,7 +63,7 @@
 
 ## Supabase 初始化
 
-详细步骤见 [MIGRATION.md](MIGRATION.md)。新库先执行根目录 `supabase.sql`，再依序执行 `supabase/migrations/*.sql`；旧 v0.4.3 库只运行两份 migration，**不要再执行旧基线覆盖新 RLS**。
+详细步骤见 [MIGRATION.md](MIGRATION.md)。新库先执行根目录 `supabase.sql`，再依序执行 `supabase/migrations/*.sql`；旧 v0.4.3 库依序运行三份 migration，**不要再执行旧基线覆盖新 RLS**。
 
 在隔离测试项目创建 Auth 账号：merchant@huoda.test、worker@huoda.test、admin@huoda.test，自行设置密码，然后执行 `supabase/seed.sql`。seed 不能用于生产。
 
@@ -67,7 +79,7 @@ Edge Function 平台提供服务角色环境变量。管理员只能由数据库
 
 ## 结构
 
-app.js 保留页面模板和路由；src/core 是服务边界与初始化；src/services 包含 10 个业务服务；src/pages/community.js 是通知、档案、评价、修改任务页面。admin 是独立审核页面，supabase/functions 是服务端审核接口，supabase/migrations 是增量迁移。tests 包含数据库权限、浏览器流程和云端 SDK 合同测试。
+app.js 保留页面模板和路由；src/core 是服务边界与初始化；src/services 包含 11 个业务服务；src/pages/messages.js 是会话列表，src/pages/community.js 保留档案、评价、修改任务页面。admin 是独立审核页面，supabase/functions 是服务端审核接口，supabase/migrations 是增量迁移。tests 包含数据库权限、浏览器流程和云端 SDK 合同测试。
 
 ## 检查
 

@@ -27,7 +27,7 @@
     <nav class="bottom-nav">
       <button data-route="home" class="nav-item active"><span class="nav-icon">⌂</span><span>找活</span></button>
       <button data-route="publish" class="nav-item"><span class="nav-icon">＋</span><span>发布</span></button>
-      <button data-route="orders" class="nav-item"><span class="nav-icon">✓</span><span>接单</span></button>
+      <button data-route="messages" class="nav-item" aria-label="消息"><span class="nav-icon message-nav-icon"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 3V6a2 2 0 0 1 2-2Z"/><path d="M7 9h10M7 13h7"/></svg><span id="messageNavBadge" class="nav-unread" hidden></span></span><span>消息</span></button>
       <button data-route="profile" class="nav-item"><span class="nav-icon">◉</span><span>我的</span></button>
     </nav>
   </div>
@@ -42,11 +42,13 @@
   <script src="src/services/applicationService.js"></script>
   <script src="src/services/favoriteService.js"></script>
   <script src="src/services/messageService.js"></script>
+  <script src="src/services/inboxService.js"></script>
   <script src="src/services/notificationService.js"></script>
   <script src="src/services/reviewService.js"></script>
   <script src="src/services/merchantService.js"></script>
   <script src="src/services/authService.js"></script>
   <script src="src/pages/community.js"></script>
+  <script src="src/pages/messages.js"></script>
   <script src="src/core/bootstrap.js"></script>
 </body>
 </html>
