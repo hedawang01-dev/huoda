@@ -1,0 +1,6 @@
+H.services.task={
+ params(cursor=0){const f=state.advancedFilters;return {user_lat:state.location?.lat??null,user_lng:state.location?.lng??null,radius_km:f.distance==='全部'?null:Number(f.distance),city:state.profile?.city||CFG.CITY||'广州',work_type:({'线上':'online','线下':'offline'})[f.workType==='全部'?state.filter:f.workType]||null,pay_mode:f.payMode==='全部'?(state.filter==='日结'?'日结':null):f.payMode,shift:f.shift==='全部'?(state.filter==='晚班'?'晚班':null):f.shift,sort_mode:state.sort,page_limit:20,page_cursor:cursor,keyword:state.query.trim()};},
+ async search(cursor=0){return H.rpc('search_nearby_tasks',this.params(cursor));},
+ async get(id){return CLOUD_ENABLED?H.task(H.unwrap(await sb.from('tasks').select('*').eq('id',id).single())):localDb().tasks.find(t=>String(t.id)===String(id));},
+ async create(task){H.auth();if(CLOUD_ENABLED)return H.rpc('create_task',{p_task:task});return H.localWrite(db=>{const user=db.users.find(u=>u.id===state.user.id);if(user?.verification_status!=='verified')H.fail('MERCHANT_NOT_VERIFIED');const t={...task,id:uid('task'),owner_id:user.id,company_name:user.company_name||user.name,review_status:'pending',status:'open',spots_left:task.spots_total,created_at:new Date().toISOString()};db.tasks.unshift(t);H.audit(db,'created','task',t.id,null,t);return t;});}
+};

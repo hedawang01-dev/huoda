@@ -1,0 +1,1 @@
+H.services.notification={async read(id=null){H.auth();if(CLOUD_ENABLED)return H.rpc('mark_notification_read',{p_notification_id:id});return H.localWrite(db=>{for(const n of db.notifications||[])if(n.user_id===state.user.id&&(!id||n.id===id))n.read_at=new Date().toISOString();});}};

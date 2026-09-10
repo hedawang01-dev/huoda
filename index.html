@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#C7F36B" />
+  <meta name="description" content="活搭 HUODA：附近兼职 + 线上技能单，一个地方都能找。" />
+  <title>活搭 HUODA - 线上线下兼职平台</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" onclick="go('home')" aria-label="返回首页">
+        <span class="brand-mark">H</span>
+        <span class="brand-copy"><strong>活搭</strong><small>HUODA</small></span>
+      </button>
+      <div class="top-actions">
+        <button class="city-btn" id="cityBtn">广州 ▾</button>
+        <button class="avatar-btn" id="notificationBtn" onclick="go('notifications')" aria-label="通知中心">♧</button><button class="avatar-btn" id="accountBtn" aria-label="账户">游</button>
+      </div>
+    </header>
+
+    <div class="mode-strip" id="modeHint">本地演示 · 数据自动保存</div>
+    <main id="app"></main>
+
+    <nav class="bottom-nav">
+      <button data-route="home" class="nav-item active"><span class="nav-icon">⌂</span><span>找活</span></button>
+      <button data-route="publish" class="nav-item"><span class="nav-icon">＋</span><span>发布</span></button>
+      <button data-route="orders" class="nav-item"><span class="nav-icon">✓</span><span>接单</span></button>
+      <button data-route="profile" class="nav-item"><span class="nav-icon">◉</span><span>我的</span></button>
+    </nav>
+  </div>
+
+  <div id="modalRoot"></div>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script src="src/core/services.js"></script>
+  <script src="src/services/locationService.js"></script>
+  <script src="src/services/recommendationService.js"></script>
+  <script src="src/services/taskService.js"></script>
+  <script src="src/services/applicationService.js"></script>
+  <script src="src/services/favoriteService.js"></script>
+  <script src="src/services/messageService.js"></script>
+  <script src="src/services/notificationService.js"></script>
+  <script src="src/services/reviewService.js"></script>
+  <script src="src/services/merchantService.js"></script>
+  <script src="src/services/authService.js"></script>
+  <script src="src/pages/community.js"></script>
+  <script src="src/core/bootstrap.js"></script>
+</body>
+</html>
