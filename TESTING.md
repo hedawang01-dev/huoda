@@ -1,10 +1,18 @@
-# v0.5 验收与已知限制
+# v0.5.2 验收与已知限制
+
+2026-09-11 最终运行：`npm run check` 42个JS/CJS文件通过；`npm test` **65项通过、0失败、0跳过**，约18.4秒。原始日志在 test-results/v052-check.log、v052-test.log。以下v0.5.1记录保留为历史基线。
+
+新增测试：ux-improvements（路由/草稿/重复提交），version-review（迟到响应/账号隔离/搜索/通知/权限），sync-hardening（身份代次/写锁/详情/网络/后台配置），server-hardening（HTTP资源边界），service-hardening（服务身份/005迁移/游标权限），chat-history-browser（450条历史翻页/失败保留/刷新/草稿）。
+
+聊天通过 get_conversation_messages 单页最多200条；用户主动加载更早记录。部署前必须追加005迁移，旧库仅执行尚未运行的迁移。真实云端验收边界不变。
+
+## v0.5.1 历史记录
 
 ## 实际执行环境
 
-Windows / Node.js 22.14.0 / 本机 Chromium，390×844 移动端；PGlite 0.3.14 PostgreSQL 内核。
+Windows / Node.js 22.14.0 / 本机 Chromium；PGlite 0.3.14 PostgreSQL 内核。指定尺寸：375×812、430×932、768×1024、1366×768、1440×900、1920×1080。
 
-2026-09-10 最终运行：`npm run check` 28 个文件通过；`npm test` 19 项通过、0 失败；320/390/480/1440 宽度检查均无页面横向溢出。
+2026-09-10 本次最终运行：`npm run check` 35 个 JS 文件通过；`npm test` 23 项通过、0 失败。六种指定尺寸的页面、已登录个人中心和实际聊天无页面横向溢出。测试结果与限制详见 docs/V051_PC_开发验收报告.md。
 
 先启动 `npm start`，在另一个终端运行 `npm run check` 与 `npm test`。数据库测试独立运行 `node --test tests/database.test.cjs`，不依赖 HTTP 服务。BROWSER_PATH 可以指定 Chrome 可执行文件。
 
@@ -12,7 +20,9 @@ Windows / Node.js 22.14.0 / 本机 Chromium，390×844 移动端；PGlite 0.3.14
 
 | 文件 | 内容 | 验证边界 |
 |---|---|---|
-| database.test.cjs | 三份 migration、14 个子场景、RLS/RPC/容量/私有对象/评价/seed 幂等/分页 | SQL 权限和 PLpgSQL 真实执行；空间函数替身，不是 PostGIS 距离验收 |
+| database.test.cjs | 四份 migration、15 个子场景、RLS/RPC/容量/私有对象/评价/seed 幂等/分页/薪资/认证缓存 | SQL 权限和 PLpgSQL 真实执行；空间函数替身，不是 PostGIS 距离验收 |
+| responsive-browser.test.cjs | 六种指定尺寸、页面截图、PC 筛选、详情 sticky、消息双栏、个人中心、草稿保护 | 本地演示真实浏览器；没有真实设备 |
+| cross-device-browser.test.cjs + cloud-fixture.cjs | 两个独立 BrowserContext，八项跨端读写；真实 SDK + 共享 SQL/RLS | Auth/PostgREST 传输与地理函数替身；单连接串行；关闭 Realtime，验证重读兜底；不是线上验收 |
 | browser.test.cjs | 游客→收藏→登录→报名→商家确认→聊天已读→完成→双方评价→信用页→附近 | 本地 adapter 的真实浏览器流程 |
 | moderation-browser.test.cjs | 新商家→选文件→独立后台认证→发布待审→审核→举报处理→审计 | 本地审核模拟器；不代表云端上传 |
 | cloud-browser.test.cjs | 附带的真实 Supabase SDK 发 RPC、20 条分页、总数、防抖、3km定位、失败不降级 | HTTP 返回值为测试模拟；不代表真实 Supabase 已上线 |

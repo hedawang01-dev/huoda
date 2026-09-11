@@ -6,6 +6,7 @@ function messagesPage(){
  app.innerHTML=`<section class="inbox-page"><div class="inbox-heading"><div class="inbox-tabs" role="tablist" aria-label="消息分类"><button role="tab" aria-selected="${tab==='chats'}" class="${tab==='chats'?'selected':''}" onclick="setMessageTab('chats')">聊天${inboxBadge(state.chatUnread)}</button><button role="tab" aria-selected="${tab==='notices'}" class="${tab==='notices'?'selected':''}" onclick="setMessageTab('notices')">通知${inboxBadge(state.noticeUnread)}</button></div><button class="inbox-orders-link" onclick="go('orders')">接单记录 ›</button></div>
  ${!state.user?`<div class="inbox-empty"><span class="empty-chat-icon">☏</span><h2>你的工作搭子，在这里联系</h2><p>登录后查看聊天，及时收到报名进展。</p><button class="primary accent" onclick="showAuth()">登录 / 注册</button></div>`:tab==='chats'?`<div class="inbox-search"><span aria-hidden="true">⌕</span><input id="inboxSearch" aria-label="搜索消息" maxlength="100" value="${esc(state.inboxQuery||'')}" placeholder="搜索联系人、公司、聊天记录" oninput="searchInbox(this.value)"></div><div class="inbox-tools"><div class="inbox-filters" aria-label="会话筛选">${[['all','全部'],['unread','未读'],['active','进行中'],['completed','已完成']].map(([value,label])=>`<button class="${(state.inboxFilter||'all')===value?'selected':''}" aria-pressed="${(state.inboxFilter||'all')===value}" onclick="filterInbox('${value}')">${label}</button>`).join('')}</div><button class="inbox-refresh" aria-label="刷新消息" onclick="refreshMessages()">↻</button></div><div id="inboxList" aria-live="polite"></div>`:`<div class="inbox-notice-tools"><p>报名进展和平台通知</p><button class="text-btn" onclick="readAllNotifications()">全部已读</button></div><div id="inboxNotices"></div>`}</section>`;
  if(state.user){if(tab==='chats')renderInboxRows();else renderInboxNotices();}
+ H.layoutMessages?.();
 }
 function renderInboxRows(){
  const box=document.getElementById('inboxList');if(!box)return;
@@ -19,7 +20,39 @@ function renderInboxRows(){
 function renderInboxNotices(){const box=document.getElementById('inboxNotices');if(!box)return;const notices=state.notifications.filter(n=>n.type!=='message');box.innerHTML=notices.length?notices.map(n=>`<button class="notification-card ${!n.read_at?'unread':''}" onclick="openNotification('${esc(n.id)}')"><div><b>${esc(n.title)}</b><p>${esc(n.body)}</p><small>${new Date(n.created_at).toLocaleString('zh-CN')}</small></div><span>${n.read_at?'':'●'}</span></button>`).join(''):'<div class="inbox-empty"><h2>暂无新通知</h2><p>报名、认证和任务审核进展会显示在这里。</p></div>';if(state.reports.length)box.insertAdjacentHTML('beforeend',`<h3 class="inbox-report-title">我的举报</h3>${state.reports.map(r=>`<div class="order-card"><b>${esc(r.reason)}</b><p class="muted">${({open:'平台处理中',resolved:'已处理',dismissed:'举报不成立'})[r.status]}</p></div>`).join('')}`);}
 function setMessageTab(tab){state.messageTab=tab;messagesPage();}
 function filterInbox(filter){state.inboxFilter=filter;messagesPage();}
-function searchInbox(query){state.inboxQuery=query;clearTimeout(H.inboxSearchTimer);H.inboxSequence=(H.inboxSequence||0)+1;H.inboxSearchTimer=setTimeout(async()=>{try{if(await H.services.inbox.load()){if(state.route==='messages')renderInboxRows();updateHeader();}}catch(e){state.inboxError=H.errorText(e);renderInboxRows();}},220);}
+function searchInbox(query){
+ state.inboxQuery=query;clearTimeout(H.inboxSearchTimer);H.inboxSequence=(H.inboxSequence||0)+1;
+ const session=H.captureSession(),revision=H.inboxSequence;
+ H.inboxSearchTimer=setTimeout(async()=>{
+  if(!H.isCurrentSession(session)||query!==state.inboxQuery||revision!==H.inboxSequence)return;
+  let request;const current=()=>H.isCurrentSession(session)&&request===H.inboxSequence&&query===state.inboxQuery;
+  try{const pending=H.services.inbox.load();request=H.inboxSequence;if(await pending&&current()){if(['messages','chat'].includes(state.route))renderInboxRows();updateHeader();}}
+  catch(e){if(!current())return;state.inboxError=H.errorText(e);if(['messages','chat'].includes(state.route))renderInboxRows();}
+ },220);
+}
 async function refreshMessages(){
- try{await H.services.inbox.load();if(CLOUD_ENABLED&&state.user){state.notifications=H.unwrap(await sb.from('notifications').select('*').eq('user_id',state.user.id).order('created_at',{ascending:false}).limit(100));if(state.messageTab==='notices')state.reports=H.unwrap(await sb.from('reports').select('*').eq('reporter_id',state.user.id).order('created_at',{ascending:false}));}else if(state.user){const db=localDb();state.notifications=db.notifications.filter(n=>n.user_id===state.user.id);state.reports=db.reports.filter(r=>r.reporter_id===state.user.id);}updateHeader();if(state.route==='messages'){const input=document.getElementById('inboxSearch'),focused=document.activeElement===input,start=input?.selectionStart;messagesPage();if(focused){const next=document.getElementById('inboxSearch');next?.focus();next?.setSelectionRange(start,start);}}}catch(e){state.inboxError=H.errorText(e);if(state.route==='messages')renderInboxRows();else toast(state.inboxError);}
+ const session=H.captureSession(),sequence=H.messageRefreshSequence=(H.messageRefreshSequence||0)+1;
+ const current=()=>H.isCurrentSession(session)&&sequence===H.messageRefreshSequence;
+ try{
+  if(await H.services.inbox.load()===false||!current())return false;
+  if(CLOUD_ENABLED&&session.id){
+   const notices=H.unwrap(await sb.from('notifications').select('*').eq('user_id',session.id).order('created_at',{ascending:false}).limit(100));
+   if(!current())return false;
+   const reports=state.messageTab==='notices'?H.unwrap(await sb.from('reports').select('*').eq('reporter_id',session.id).order('created_at',{ascending:false})):null;
+   if(!current())return false;state.notifications=notices;if(reports)state.reports=reports;
+  }else if(session.id){const db=localDb();state.notifications=db.notifications.filter(n=>n.user_id===session.id);state.reports=db.reports.filter(r=>r.reporter_id===session.id);}
+  if(!current())return false;
+  updateHeader();
+  if(state.route==='messages'){
+   const input=document.getElementById('inboxSearch'),focused=document.activeElement===input,start=input?.selectionStart;
+   messagesPage();if(focused){const next=document.getElementById('inboxSearch');next?.focus();next?.setSelectionRange(start,start);}
+  }
+  H.syncStatus?.('ok');return true;
+ }catch(e){
+  if(!current())return false;
+  state.inboxError=H.errorText(e);
+  if(CLOUD_ENABLED)H.syncStatus?.('error','暂时无法更新消息，请检查网络后重试。');
+  if(state.route==='messages')renderInboxRows();else toast(state.inboxError);
+  return false;
+ }
 }

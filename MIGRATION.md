@@ -1,10 +1,10 @@
-# v0.4.3 → v0.5 迁移
+# v0.4.3 → v0.5.2 迁移
 
 ## 顺序
 
 1. 备份数据库/Storage，在隔离副本演练；暂停旧客户端写入。
-2. 新库运行根目录 supabase.sql，然后 202609100001_v050_foundation.sql、202609100002_task_edit.sql、202609100003_message_inbox.sql。
-3. 旧 v0.4.3 库依序跑三份 migration；不要重新执行旧 supabase.sql。每份迁移各自事务执行，文件不是可重复运行脚本。
+2. 新库运行根目录 supabase.sql，然后 202609100001_v050_foundation.sql、202609100002_task_edit.sql、202609100003_message_inbox.sql、202609100004_desktop_sync.sql、202609110005_service_hardening.sql。
+3. 旧 v0.4.3 库依序跑五份 migration；不要重新执行旧 supabase.sql。每份迁移各自事务执行，文件不是可重复运行脚本。
 
 ## PostGIS 与旧坐标
 
@@ -65,5 +65,25 @@ on conflict do nothing;
 
 ## v0.5.0 → v0.5.1 消息列表升级
 
-已运行前两份迁移的库，只执行 `202609100003_message_inbox.sql`。新增只读 RPC `get_message_inbox(p_query)`，只向报名参与方返回对方公开名称/头像、任务摘要、最新消息、真实未读总数；匿名不可调用。没有删除、更改历史业务数据和权限状态机。
+已运行前两份迁移的库，消息升级执行 `202609100003_message_inbox.sql`，随后本次 PC 升级再执行 `004`。新增只读 RPC `get_message_inbox(p_query)`，只向报名参与方返回对方公开名称/头像、任务摘要、最新消息、真实未读总数；匿名不可调用。没有删除、更改历史业务数据和权限状态机。
 本地 LocalStorage 键保持不变，不清空原消息。会话按接单记录区分，同一对象不同任务各有一条会话，便于追踪约定。通知页排除重复的聊天通知。
+
+## v0.5.1 PC 响应式与一致性补充
+
+已完成前三份迁移的库只追加 `202609100004_desktop_sync.sql`：
+
+- search_tasks_v051 使用与原查询相同的公开任务条件，增加 min_price_fen、max_price_fen、price_unit_filter。先过滤，再计数与分页。原 RPC 保持可用。
+- 商家认证 trigger 同步 tasks.verified，并校正已有记录。任务审核和商家认证仍是两个不同状态；不自动审批任务。
+- 不创建任何业务表、不修改原 RLS。普通用户无权调用 trigger 函数；搜索仅公开审核通过且可报名的任务。
+- 本地 PGlite 已执行验证；目标 Supabase 尚未执行。上线前备份，在隔离项目补做八项跨设备、Storage、Auth、Realtime 验收。
+
+## v0.5.1 → v0.5.2 服务加固
+
+已运行001–004的库只追加 `202609110005_service_hardening.sql`，先执行迁移再更新前端。
+
+- 新增 get_conversation_messages，只允许当前报名的参与者读取；匿名和第三人拒绝。
+- 以 created_at + id 双字段游标翻页，单页最大200条；即使时间戳相同也不重复、不跳过。
+- 新增 messages(application_id, created_at desc, id desc) 索引。
+- 不新建业务表、不修改历史数据、不改变原有消息/通知/报名RPC。旧客户端仍可运行。
+- 回退时先恢复旧客户端；可保留未使用的新函数/索引，无需删除业务数据。
+- 此迁移非幂等脚本，请只运行一次；本地SQL权限测试通过不代表已部署至真实项目。

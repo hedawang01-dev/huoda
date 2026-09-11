@@ -12,3 +12,6 @@ test('real Supabase browser SDK contract: guest RPC, paging, geolocation, deboun
   fail=true;await p.locator('#homeSearch').fill('故障');await p.waitForFunction(()=>state.feedError==='测试网络故障');assert.equal(await p.evaluate(()=>CLOUD_ENABLED),true);assert.equal(await p.locator('.task-card').count(),0);assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+test('partial cloud config is a visible error, never a silent local business store',async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:require('./browser-path.cjs')});try{const page=await browser.newPage();await page.route('**/config.js',r=>r.fulfill({contentType:'text/javascript',body:"window.HUODA_CONFIG={SUPABASE_URL:'https://incomplete.supabase.co'}"}));await page.goto('http://127.0.0.1:8085');await page.getByText('暂时无法连接服务',{exact:true}).waitFor();assert.match(await page.locator('#app').innerText(),/云端配置尚未填完整/);assert.equal(await page.evaluate(()=>localStorage.getItem('huoda_mvp_v050')),null);}finally{await browser.close();}
+});

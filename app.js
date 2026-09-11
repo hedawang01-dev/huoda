@@ -1,10 +1,11 @@
 const CFG = window.HUODA_CONFIG || window.FINDWORK_CONFIG || {};
-const CLOUD_REQUESTED = Boolean(CFG.SUPABASE_URL && CFG.SUPABASE_KEY);
+const CLOUD_REQUESTED = Boolean(CFG.SUPABASE_URL || CFG.SUPABASE_KEY);
 let CLOUD_ENABLED = false;
 let sb = null;
 
 async function ensureCloudClient(){
   if(!CLOUD_REQUESTED)return;
+  if(!CFG.SUPABASE_URL||!CFG.SUPABASE_KEY)throw new Error('云端配置尚未填完整，请同时填写项目 URL 和公开 key。未切换本地演示。');
   if(!window.supabase?.createClient){
     try{
       await new Promise((resolve,reject)=>{
@@ -35,7 +36,7 @@ const seedTasks = [
   {id:'demo-8',type:'offline',category:'仓储兼职',title:'仓库分拣白班｜8小时',price:208,price_unit:'次',settlement:'每周五结算',pay_mode:'周结',time_text:'工作日 09:00-18:00',location:'广州·白云区·嘉禾望岗',lat:23.2378,lng:113.2898,tags:['白班','周结','无需经验'],company_name:'迅仓供应链',description:'按区域完成轻小件分拣、扫码和装筐，现场培训后上岗。需要能连续站立工作。',spots_total:6,spots_left:5,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-7',created_at:Date.now()-12600000}
 ];
 
-const FILTER_DEFAULTS = {workType:'全部',payMode:'全部',shift:'全部',distance:'全部'};
+const FILTER_DEFAULTS = {workType:'全部',payMode:'全部',shift:'全部',distance:'全部',minPrice:'',maxPrice:'',priceUnit:'全部'};
 
 const state = {
   route:'home', filter:'全部', query:'', sort:'recommend', selectedTask:null,
@@ -107,7 +108,27 @@ function merchantVerified(){return state.profile?.verification_status==='verifie
 async function init(){
  try{
   await ensureCloudClient();
-  if(CLOUD_ENABLED){const {data,error}=await sb.auth.getSession();if(error)throw error;if(data.session?.user){await hydrateUser(data.session.user);await H.services.favorite.merge();}sb.auth.onAuthStateChange((event,session)=>{if(event==='INITIAL_SESSION')return;setTimeout(async()=>{try{if(session?.user){await hydrateUser(session.user);await H.services.favorite.merge();}else{state.user=null;state.profile=null;state.favorites=loadFavorites();}await loadData();H.services.message.subscribe();render();if(session)runAfterAuth();}catch(e){toast(H.errorText(e));}},0);});}
+  if(CLOUD_ENABLED){
+   const {data,error}=await sb.auth.getSession();if(error)throw error;
+   if(data.session?.user){await hydrateUser(data.session.user);await H.services.favorite.merge();}
+   sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='INITIAL_SESSION')return;
+    const sequence=H.authEventSequence=(H.authEventSequence||0)+1;
+    // Apply identity changes immediately; database reads run outside the Auth callback.
+    state.user=session?.user||null;const identity=H.captureSession();
+    setTimeout(async()=>{
+     const current=()=>sequence===H.authEventSequence&&H.isCurrentSession(identity);
+     if(!current())return;
+     try{
+      if(session?.user){await hydrateUser(session.user);if(!current())return;await H.services.favorite.merge();}
+      else{state.profile=null;state.favorites=loadFavorites();}
+      if(!current())return;
+      await loadData();if(!current())return;
+      H.services.message.subscribe();render();if(session)runAfterAuth();
+     }catch(e){if(current())toast(H.errorText(e));}
+    },0);
+   });
+  }
   else{const saved=localDb().users.find(u=>u.active);if(saved){state.user=saved;state.profile=enrichUser(saved);await H.services.favorite.merge();}}
   await loadData();state.loading=false;H.services.message.subscribe();render();
  }catch(e){state.loading=false;app.innerHTML=`<section class="section"><div class="empty-box"><b>暂时无法连接服务</b><p>${esc(H.errorText(e))}</p><button class="primary" onclick="location.reload()">重新连接</button></div></section>`;}
@@ -116,9 +137,13 @@ async function init(){
 async function hydrateUser(user){return H.services.auth.hydrate(user);}
 
 async function loadData(){
+ const session=H.captureSession(),request=H.dataRequest=(H.dataRequest||0)+1;
+ const current=()=>H.isCurrentSession(session)&&request===H.dataRequest;
  if(CLOUD_ENABLED){
   if(state.user)await hydrateUser(state.user);
+  if(!current())return false;
   if(!['messages','chat','notifications'].includes(state.route))await reloadFeed(false);
+  if(!current())return false;
   if(state.user){
    const id=state.user.id;
    const [a,r,n,rv,own,unread]=await Promise.all([
@@ -128,40 +153,52 @@ async function loadData(){
     sb.from('reviews').select('*').eq('reviewer_id',id),
     sb.from('tasks').select('*').eq('owner_id',id).order('created_at',{ascending:false}),
     sb.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',id).is('read_at',null)
-   ]);state.applications=H.unwrap(a)||[];state.reports=H.unwrap(r)||[];state.notifications=H.unwrap(n)||[];state.reviews=H.unwrap(rv)||[];state.ownTasks=(H.unwrap(own)||[]).map(H.task);H.unwrap(unread);state.unreadCount=unread.count||0;
-   state.messages=H.unwrap(await sb.from('messages').select('*').order('created_at',{ascending:false}).limit(200)).reverse();
-   if(state.route==='chat'&&state.selectedApplication){state.messages=H.unwrap(await sb.from('messages').select('*').eq('application_id',state.selectedApplication.id).order('created_at',{ascending:false}).limit(200)).reverse();}
-   state.favorites=await H.services.favorite.list();
+   ]);
+   if(!current())return false;
+   const snapshot={applications:H.unwrap(a)||[],reports:H.unwrap(r)||[],notifications:H.unwrap(n)||[],reviews:H.unwrap(rv)||[],ownTasks:(H.unwrap(own)||[]).map(H.task),unreadCount:unread.count||0};H.unwrap(unread);
+   // Do not download every conversation on unrelated pages. The active chat
+   // loads its own history through inbox.conversation.
+   snapshot.favorites=await H.services.favorite.list();
+   if(!current())return false;
+   Object.assign(state,snapshot);
   }else{state.applications=[];state.reports=[];state.messages=[];state.notifications=[];state.reviews=[];state.ownTasks=[];state.unreadCount=0;}
  }else{
   const db=localDb();state.tasks=db.tasks.map(H.task);state.ownTasks=state.tasks.filter(t=>t.owner_id===state.user?.id);state.applications=db.applications.filter(a=>state.user&&[a.worker_id,a.merchant_id].includes(state.user.id));const ids=new Set(state.applications.map(a=>a.id));state.messages=db.messages.filter(m=>ids.has(m.application_id));state.reports=db.reports.filter(r=>r.reporter_id===state.user?.id);state.notifications=db.notifications.filter(n=>n.user_id===state.user?.id);state.reviews=db.reviews.filter(r=>r.reviewer_id===state.user?.id);state.unreadCount=state.notifications.filter(n=>!n.read_at).length;state.favorites=await H.services.favorite.list();if(state.user){const fresh=db.users.find(u=>u.id===state.user.id);if(fresh){state.user=fresh;state.profile=enrichUser(fresh);}}
  }
+ if(!current())return false;
  await H.services.inbox.load();
+ if(!current())return false;
  if(state.selectedApplication)state.selectedApplication=state.applications.find(a=>a.id===state.selectedApplication.id)||null;
+ return true;
 }
 async function reloadFeed(paint=true,more=false){
  if(!CLOUD_ENABLED){if(paint)render();return;}
- const request=++H.feedRequest;state.feedLoading=true;
- try{const data=await H.services.task.search(more?state.nextCursor||0:0);if(request!==H.feedRequest)return;state.tasks=more?[...state.tasks,...data.items.map(H.task)]:data.items.map(H.task);state.feedTotal=data.total;state.nextCursor=data.next_cursor;state.feedError='';}
- catch(e){if(request!==H.feedRequest)return;state.feedError=H.errorText(e);state.tasks=[];state.feedTotal=0;state.nextCursor=null;if(!paint)throw e;toast(state.feedError);}
- finally{if(request===H.feedRequest){state.feedLoading=false;if(paint&&state.route==='home'){refreshHomeResults();document.querySelector('.match-section')?.remove();app.insertAdjacentHTML('beforeend',matchCards());}}}
+ const request=++H.feedRequest,session=H.captureSession();state.feedLoading=true;
+ try{const data=await H.services.task.search(more?state.nextCursor||0:0);if(request!==H.feedRequest||!H.isCurrentSession(session))return;const items=data.items.map(H.task);state.tasks=more?[...new Map([...state.tasks,...items].map(t=>[t.id,t])).values()]:items;state.feedTotal=data.total;state.nextCursor=data.next_cursor;state.feedError='';}
+ catch(e){if(request!==H.feedRequest||!H.isCurrentSession(session))return;state.feedError=H.errorText(e);if(!more){state.tasks=[];state.feedTotal=0;state.nextCursor=null;}if(!paint)throw e;toast(state.feedError);}
+ finally{if(request===H.feedRequest){state.feedLoading=false;if(paint&&state.route==='home'){refreshHomeResults();document.querySelector('.match-section')?.remove();const center=document.querySelector('.home-center')||app;center.insertAdjacentHTML('beforeend',matchCards());center.querySelector('.match-section')?.classList.add('mobile-matches');}}}
 }
 async function loadMoreTasks(){if(!state.feedLoading&&state.nextCursor!==null)await reloadFeed(true,true);}
 
 function render(){
+  saveVisibleDrafts();
+  if(!state.loading&&!uxRouteReady){uxRouteReady=true;if(location.hash){restoreLocation();return;}}
+  if(!state.loading)syncLocation();
   updateHeader();
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.route===state.route||(b.dataset.route==='messages'&&['chat','notifications'].includes(state.route))));
   if(state.loading){app.innerHTML='<div class="skeleton-page"><div class="skeleton h"></div><div class="skeleton"></div><div class="skeleton"></div></div>';return}
   const routes={home,publish,orders,profile,favorites:favoritesPage,detail:()=>detail(state.selectedTask),chat,admin,messages:messagesPage,notifications:notificationsPage,publicProfile:publicProfilePage};
   (routes[state.route]||home)();
+  H.layout?.();
 }
 
 function updateHeader(){
+  H.updateDesktopHeader?.();
   document.querySelector('.app-shell').classList.toggle('inbox-shell',['messages','chat','notifications'].includes(state.route));
   const total=(state.chatUnread||0)+(state.noticeUnread||0),badge=document.getElementById('messageNavBadge');if(badge){badge.hidden=!total;badge.textContent=total>99?'99+':total;}const nav=document.querySelector('[data-route="messages"]');if(nav)nav.setAttribute('aria-label',`消息${total?`，${total}条未读`:''}`);
 
   const bell=document.getElementById('notificationBtn');if(bell){bell.innerHTML=`♧${total?`<span class="unread-badge">${total>99?'99+':total}</span>`:''}`;bell.setAttribute('aria-label',`通知中心，${state.noticeUnread||0}条未读`);}const hint=document.getElementById('modeHint');const btn=document.getElementById('accountBtn');const city=document.getElementById('cityBtn');
-  hint.textContent=CLOUD_ENABLED?'云端测试 · Supabase 数据模式':'本地演示 · 数据自动保存';
+  hint.textContent=CLOUD_ENABLED?'云端账户 · 手机与电脑共用数据':'本地演示 · 仅当前浏览器保存，不跨设备同步';
   btn.textContent=(state.profile?.name||'游客').slice(0,1);
   city.textContent=`${state.profile?.city||CFG.CITY||'广州'} ▾`;
 }
@@ -195,6 +232,9 @@ function filteredTasks(){
   else if(state.filter!=='全部')list=list.filter(t=>(t.tags||[]).includes(state.filter)||t.pay_mode===state.filter||t.category===state.filter);
 
   const af=state.advancedFilters||FILTER_DEFAULTS;
+  if(af.minPrice!=='')list=list.filter(t=>t.price_fen>=Math.round(Number(af.minPrice)*100));
+  if(af.maxPrice!=='')list=list.filter(t=>t.price_fen<=Math.round(Number(af.maxPrice)*100));
+  if(af.priceUnit!=='全部')list=list.filter(t=>t.price_unit===af.priceUnit);
   if(af.workType==='线下')list=list.filter(t=>t.type==='offline');
   else if(af.workType==='线上')list=list.filter(t=>t.type==='online');
   if(af.payMode!=='全部')list=list.filter(t=>t.pay_mode===af.payMode||(t.tags||[]).includes(af.payMode));
@@ -216,11 +256,12 @@ function filteredTasks(){
 function taskCard(t){
   const dist=distanceLabel(t), score=matchScore(t), fav=isFavorite(t.id);
   const tags=(t.tags||[]).filter(x=>x!==t.pay_mode).slice(0,2);
-  return `<article class="task-card" onclick="openTask('${esc(t.id)}')">
+  return `<article class="task-card" tabindex="0" role="link" aria-label="查看任务：${esc(t.title)}" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openTask('${esc(t.id)}')}" onclick="openTask('${esc(t.id)}')">
     <div class="task-headline"><div class="task-title">${esc(t.title)}</div><button class="favorite-btn ${fav?'active':''}" onclick="toggleFavorite(event,'${esc(t.id)}')" aria-label="${fav?'取消收藏':'收藏任务'}">${fav?'♥':'♡'}</button></div>
     <div class="task-pay-row"><div class="price">${priceLabel(t)}</div><span class="pay-chip">${esc(t.pay_mode||'待确认')}</span>${state.profile?.skills?.length?`<span class="match-inline">匹配 ${score} 分</span>`:''}</div>
     <div class="task-essential"><div><span>时间</span><b>${esc(t.time_text)}</b></div><div><span>地点</span><b class="distance">${esc(dist)}</b></div></div>
-    <div class="task-foot"><div class="task-tags">${tags.map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div><span class="verified-mini">✓ ${t.verified?'商家已认证':'认证待核验'}</span></div>
+    <div class="desktop-task-meta"><span>${esc(t.company_name||'商家')}</span><span>剩余 ${Number(t.spots_left)||0} 个名额</span></div>
+    <div class="task-foot"><div class="task-tags">${tags.map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div><span class="verified-mini">${t.verified?'✓ 商家已认证':'认证待核验'}</span></div>
   </article>`;
 }
 
@@ -248,7 +289,6 @@ function feedStatusMarkup(ctx){
 function home(){
   const list=filteredTasks(), filterCount=activeAdvancedFilterCount(), ctx=feedContext(list);
   app.innerHTML=`<section class="hero"><div class="hero-card"><div class="hero-kicker">HUODA · FLEXIBLE WORK</div><h2>有空就接，有活就搭。</h2><p>附近兼职 + 线上技能单，一个地方都能找。</p><div class="hero-badge">✓ 工价 · 时间 · 结算先看清</div></div>
-  <div class="search-wrap"><span class="search-icon">⌕</span><input id="homeSearch" class="search-box" value="${esc(state.query)}" placeholder="搜兼职、技能、地点" oninput="searchNow(this.value)">${state.query?'<button class="search-clear" onclick="clearSearch()">×</button>':''}</div>
   <div class="quick-grid"><button class="quick ${state.filter==='线下'?'hot':''}" onclick="setFilter('线下')" aria-pressed="${state.filter==='线下'}"><strong>◎</strong>附近</button><button class="quick ${state.filter==='线上'?'hot':''}" onclick="setFilter('线上')" aria-pressed="${state.filter==='线上'}"><strong>⌘</strong>线上</button><button class="quick ${state.filter==='日结'?'hot':''}" onclick="setFilter('日结')" aria-pressed="${state.filter==='日结'}"><strong>¥</strong>日结</button><button class="quick ${state.filter==='晚班'?'hot':''}" onclick="setFilter('晚班')" aria-pressed="${state.filter==='晚班'}"><strong>◐</strong>晚班</button></div></section>
   <section class="section task-feed">
     <div class="feed-tools">
@@ -260,7 +300,7 @@ function home(){
     </div>
     <div class="task-list" id="taskList">${list.length?list.map(taskCard).join(''):'<div class="empty">暂时没有符合条件的活，换个条件试试。</div>'}</div>
   </section>
-  ${matchCards()}`;updateFeedPager();
+  ${matchCards()}`;updateFeedPager();H.layoutHome?.();
 }
 
 function refreshHomeResults(){
@@ -270,23 +310,26 @@ function refreshHomeResults(){
   const status=document.querySelector('.feed-status');
   if(status){const ctx=feedContext(list);status.innerHTML=feedStatusMarkup(ctx)}
   updateFeedPager();
+  H.refreshHomeAside?.();
 }
-function searchNow(v){state.query=v;clearTimeout(H.searchTimer);H.searchTimer=setTimeout(()=>CLOUD_ENABLED?reloadFeed():refreshHomeResults(),280);}
-function clearSearch(){state.query='';if(CLOUD_ENABLED)reloadFeed();home();setTimeout(()=>document.getElementById('homeSearch')?.focus(),0)}
+function searchNow(v){state.query=v;document.getElementById('navSearchClear').hidden=!v;clearTimeout(H.searchTimer);H.searchTimer=setTimeout(()=>{if(state.route==='home'){if(CLOUD_ENABLED)reloadFeed();else refreshHomeResults();}},280);}
+function submitNavSearch(event){event?.preventDefault();clearTimeout(H.searchTimer);state.query=document.getElementById('homeSearch').value.trim();go('home');if(CLOUD_ENABLED)reloadFeed();}
+function clearSearch(){clearTimeout(H.searchTimer);state.query='';const input=document.getElementById('homeSearch');input.value='';document.getElementById('navSearchClear').hidden=true;if(state.route==='home'){if(CLOUD_ENABLED)reloadFeed();else refreshHomeResults();}input.focus();}
 function setSort(v){if(v==='distance'&&!state.location){showLocationPicker();return;}state.sort=v;if(CLOUD_ENABLED)reloadFeed();else refreshHomeResults();}
 
-async function favoritesPage(){app.innerHTML='<section class="section"><div class="empty">正在读取收藏…</div></section>';try{const list=await H.services.favorite.tasks();if(state.route!=='favorites')return;H.favoriteTasks=list;app.innerHTML=`<div class="detail-head"><button class="back" onclick="go('profile')">← 返回</button><span class="page-kicker">我的收藏</span></div><section class="section"><div class="saved-head"><div><h2>稍后再看</h2><p>${list.length} 个可报名的已收藏兼职</p></div><span class="saved-icon">♡</span></div><div class="task-list">${list.length?list.map(taskCard).join(''):'<div class="empty-box"><b>还没有可报名的收藏</b><p class="muted">已关闭的任务暂不展示。</p><button class="primary" onclick="go(&quot;home&quot;)">去找活</button></div>'}</div></section>`;}catch(e){app.innerHTML=`<section class="section"><p>${esc(H.errorText(e))}</p><button class="secondary" onclick="favoritesPage()">重试</button></section>`;}}
+async function favoritesPage(){const session=H.captureSession(),navigation=uxNavigation,request=H.favoritePageSequence=(H.favoritePageSequence||0)+1;const current=()=>H.isCurrentSession(session)&&state.route==='favorites'&&navigation===uxNavigation&&request===H.favoritePageSequence;app.innerHTML='<section class="section"><div class="empty">正在读取收藏…</div></section>';try{const list=await H.services.favorite.tasks();if(!current())return;H.favoriteTasks=list;app.innerHTML=`<div class="detail-head"><button class="back" onclick="go('profile')">← 返回</button><span class="page-kicker">我的收藏</span></div><section class="section"><div class="saved-head"><div><h2>稍后再看</h2><p>${list.length} 个可报名的已收藏兼职</p></div><span class="saved-icon">♡</span></div><div class="task-list">${list.length?list.map(taskCard).join(''):'<div class="empty-box"><b>还没有可报名的收藏</b><p class="muted">已关闭的任务暂不展示。</p><button class="primary" onclick="go(&quot;home&quot;)">去找活</button></div>'}</div></section>`;}catch(e){if(!current())return;app.innerHTML=`<section class="section"><p>${esc(H.errorText(e))}</p><button class="secondary" onclick="favoritesPage()">重试</button></section>`;}}
 
 function detail(t){
-  if(!t){go('home');return}
+  if(!t){app.innerHTML=`<section class="section"><div class="empty-box" role="status"><b>${state.taskError?'任务暂不可查看':'正在读取任务…'}</b>${state.taskError?`<p>${esc(state.taskError)}</p><div class="btn-row"><button class="secondary" onclick="openTask(state.routeTaskId)">重新加载</button><button class="primary" onclick="go('home')">去找其他活</button></div>`:''}</div></section>`;return;}
   const applied=state.applications.find(a=>String(a.task_id)===String(t.id)&&String(getWorkerId(a))===String(state.user?.id));
   const dist=distanceLabel(t);
-  app.innerHTML=`<div class="detail-head"><button class="back" onclick="go('home')">← 返回</button><button class="text-btn danger" onclick="showReport('${esc(t.id)}')">举报</button></div>
+  app.innerHTML=`<div class="detail-head"><button class="back" onclick="backRoute('home')">← 返回</button><button class="text-btn danger" onclick="showReport('${esc(t.id)}')">举报</button></div>
   <section class="detail-card"><div class="tags"><span class="tag strong">${typeLabel(t)}</span>${(t.tags||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}<span class="tag ${reviewClass(t.review_status)==='ok'?'accent':'warn'}">${reviewLabel(t.review_status)}</span></div><h2>${esc(t.title)}</h2><div class="big-price">${priceLabel(t)}</div><div class="info-row"><span>时间</span><b>${esc(t.time_text)}</b></div><div class="info-row"><span>地点</span><b>${esc(dist)}</b></div><div class="info-row"><span>结算</span><b>${esc(t.settlement)}</b></div><div class="info-row"><span>剩余</span><b>${t.spots_left??1} 个名额</b></div></section>
   <section class="detail-card"><h3>这单要做什么</h3><p class="desc">${esc(t.description)}</p></section>
   <section class="detail-card"><div class="company"><div class="avatar">${esc((t.company_name||'商').slice(0,1))}</div><div><button class="text-btn" onclick="openPublicProfile('${esc(t.owner_id)}','merchant')"><b>${esc(t.company_name||'商家')} ›</b></button><div class="${t.verified?'company-trust':'company-review'}">${t.verified?'✓ 商家实名认证已通过':'! 商家认证状态待核验'}</div></div></div></section>
   <section class="detail-card safety-card"><h3>🛡 活搭安全提醒</h3><ul class="safety-list"><li>任何押金、保证金、培训费、入职费都不要支付。</li><li>遇到刷单、代收转账、借银行卡等要求，请立即举报。</li><li>实际工资、地点或工作内容与页面明显不符时保留聊天证据。</li></ul></section>
   <section class="section"><button class="secondary" onclick="toggleFavorite(event,'${esc(t.id)}')">${isFavorite(t.id)?'♥ 已收藏':'♡ 收藏任务'}</button></section><section class="section sticky-cta"><button class="primary accent" ${applied||isOwner(t)||t.review_status!=='approved'||t.status!=='open'||t.spots_left<1?'disabled':''} onclick="applyTask('${esc(t.id)}')">${isOwner(t)?'这是你发布的任务':t.review_status!=='approved'?'等待平台审核':applied?statusLabel(applied.status):`立即${t.type==='online'?'接单':'报名'}`}</button></section>`;
+  H.layoutDetail?.(t,applied);
 }
 
 function requireLogin(next){if(state.user)return true;showAuth(next);return false}
@@ -295,6 +338,8 @@ async function applyTask(taskId){if(!requireLogin(()=>applyTask(taskId)))return;
 function publish(){
   const myPosts=state.user?state.ownTasks.filter(t=>String(t.owner_id)===String(state.user.id)):[];
   app.innerHTML=`<section class="section"><div class="seg"><button class="${state.publishTab==='new'?'active':''}" onclick="setPublishTab('new')">发布一单活</button><button class="${state.publishTab==='mine'?'active':''}" onclick="setPublishTab('mine')">我发布的</button></div></section>${state.publishTab==='new'?publishForm():publishedList(myPosts)}`;
+  restoreDraft(app.querySelector('.form-card'),'publish');
+  if(uxPublishing)app.querySelectorAll('[onclick="createTask()"]').forEach(b=>{b.disabled=true;b.textContent='正在提交…';});
 }
 function publishForm(){
   const ready=merchantVerified();
@@ -317,7 +362,7 @@ function publishedList(posts){
     const apps=related.filter(a=>String(a.task_id)===String(t.id));return `<div class="merchant-card"><div class="merchant-head"><div><b>${esc(t.title)}</b><div class="muted">${priceLabel(t)} · ${apps.length} 人报名</div></div><span class="status ${reviewClass(t.review_status)}">${reviewLabel(t.review_status)}</span></div><button class="text-btn" onclick="editTaskDetails('${esc(t.id)}')">修改任务信息 ›</button><div class="applicant-list">${apps.length?apps.map(a=>`<div class="applicant"><div><span class="mini-avatar">人</span><div><button class="text-btn" onclick="openPublicProfile('${esc(a.worker_id)}','worker')">查看求职者档案 ›</button><small> · ${statusLabel(a.status)}</small></div></div>${a.status==='applied'?`<div class="mini-actions"><button onclick="merchantDecision('${a.id}','rejected')">拒绝</button><button class="accept" onclick="merchantDecision('${a.id}','accepted')">确认</button></div>`:`<div class="mini-actions">${a.status==='accepted'?`<button class="accept" onclick="openChat('${a.id}')">聊天</button>`:''}<span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div>`}</div>`).join(''):'<div class="muted pad">暂时还没有人报名</div>'}</div></div>`
   }).join(''):'<div class="empty">还没有发布任务</div>'}</section>`;
 }
-async function createTask(){if(!requireLogin(()=>createTask()))return;try{const v=id=>document.getElementById(id)?.value.trim(),price=Number(v('pPrice')),spots=Number(v('pSpots')),online=v('pType')==='online';if(!v('pTitle')||!v('pTime')||!v('pDesc')||!v('pLocation')||!Number.isFinite(price)||price<=0||!Number.isInteger(spots)||spots<1||spots>1000)throw new Error('请完整填写任务信息，人数为 1–1000 的整数');if(!/^\d+(\.\d{1,2})?$/.test(v('pPrice')))throw new Error('金额最多保留两位小数');if(!online&&(!v('pLat')||!v('pLng')||!v('pCity')||Number(v('pLat')) < -90||Number(v('pLat'))>90||Number(v('pLng')) < -180||Number(v('pLng'))>180))throw new Error('请填写实际工作地点的城市和有效 WGS84 坐标');const start=v('pStart')?new Date(v('pStart')).toISOString():null,end=v('pEnd')?new Date(v('pEnd')).toISOString():null;if(start&&end&&end<=start)throw new Error('结束时间应晚于开始时间');const tags=(v('pTags')||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean).slice(0,8);await H.services.task.create({type:v('pType'),title:v('pTitle'),price_fen:Math.round(price*100),price,price_unit:v('pUnit'),pay_mode:v('pPay'),settlement:({日结:'完工当天结算',周结:'每周结算',月结:'每月结算',完工结:'验收后结算'})[v('pPay')],time_text:v('pTime'),location:online?'线上':v('pLocation'),city:v('pCity'),description:v('pDesc'),tags,category:tags[0]||'兼职',spots_total:spots,lat:online?null:Number(v('pLat')),lng:online?null:Number(v('pLng')),coordinate_system:online?null:'WGS84',start_at:start,end_at:end,schedule_type:start?'fixed':end?'deadline':'flexible',shift:v('pShift'),verified:true});await loadData();state.publishTab='mine';render();toast('已提交平台审核');}catch(e){toast(H.errorText(e));}}
+async function createTask(){if(uxPublishing||!requireLogin(()=>createTask()))return;uxPublishing=true;saveVisibleDrafts();const session=H.captureSession(),key=draftKey('publish');app.querySelectorAll('[onclick="createTask()"]').forEach(b=>{b.disabled=true;b.textContent='正在提交…';});let created=false;try{const v=id=>document.getElementById(id)?.value.trim(),price=Number(v('pPrice')),spots=Number(v('pSpots')),online=v('pType')==='online';if(!v('pTitle')||!v('pTime')||!v('pDesc')||!v('pLocation')||!Number.isFinite(price)||price<=0||!Number.isInteger(spots)||spots<1||spots>1000)throw new Error('请完整填写任务信息，人数为 1–1000 的整数');if(!/^\d+(\.\d{1,2})?$/.test(v('pPrice')))throw new Error('金额最多保留两位小数');if(!online&&(!v('pLat')||!v('pLng')||!v('pCity')||Number(v('pLat')) < -90||Number(v('pLat'))>90||Number(v('pLng')) < -180||Number(v('pLng'))>180))throw new Error('请填写实际工作地点的城市和有效 WGS84 坐标');const start=v('pStart')?new Date(v('pStart')).toISOString():null,end=v('pEnd')?new Date(v('pEnd')).toISOString():null;if(start&&end&&end<=start)throw new Error('结束时间应晚于开始时间');const tags=(v('pTags')||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean).slice(0,8);await H.services.task.create({type:v('pType'),title:v('pTitle'),price_fen:Math.round(price*100),price,price_unit:v('pUnit'),pay_mode:v('pPay'),settlement:({日结:'完工当天结算',周结:'每周结算',月结:'每月结算',完工结:'验收后结算'})[v('pPay')],time_text:v('pTime'),location:online?'线上':v('pLocation'),city:v('pCity'),description:v('pDesc'),tags,category:tags[0]||'兼职',spots_total:spots,lat:online?null:Number(v('pLat')),lng:online?null:Number(v('pLng')),coordinate_system:online?null:'WGS84',start_at:start,end_at:end,schedule_type:start?'fixed':end?'deadline':'flexible',shift:v('pShift'),verified:true});created=true;writeDraft(key,null);const box=app.querySelector('[data-draft-key]');if(box?.dataset.draftKey===key)box.dataset.draftKey='';if(!H.isCurrentSession(session))return;if(state.route==='publish'){state.publishTab='mine';render();}await loadData();if(!H.isCurrentSession(session))return;if(state.route==='publish')render();toast('已提交平台审核');}catch(e){if(H.isCurrentSession(session))toast(created?'任务已提交，列表刷新失败，请到我发布的查看。':H.errorText(e));}finally{uxPublishing=false;app.querySelectorAll('[onclick="createTask()"]').forEach(b=>{b.disabled=false;b.textContent='提交平台审核';});}}
 
 function orders(){
   const workerApps=state.user?state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)):[];
@@ -334,27 +379,38 @@ async function cancelApplication(appId){try{await H.services.application.transit
 
 async function openChat(appId){
  if(!requireLogin(()=>openChat(appId)))return;
+ saveVisibleDrafts();const navigation=++uxNavigation,session=H.captureSession();
  const request=H.chatSequence=(H.chatSequence||0)+1;
- state.route='chat';updateHeader();app.innerHTML='<div class="inbox-empty">正在打开会话…</div>';
- try{const data=await H.services.inbox.conversation(appId);if(request!==H.chatSequence||state.route!=='chat')return;
+ state.route='chat';state.routeChatId=appId;state.selectedApplication=null;syncLocation();updateHeader();app.innerHTML='<div class="inbox-empty">正在打开会话…</div>';
+ try{const data=await H.services.inbox.conversation(appId);if(request!==H.chatSequence||navigation!==uxNavigation||!H.isCurrentSession(session)||state.route!=='chat')return;
   if(!['accepted','completed'].includes(data.application.status)&&!data.messages.some(m=>m.message_type!=='system'))throw new Error('商家确认后才能聊天');
-  state.selectedApplication=data.application;state.messages=data.messages;
+  H.applyConversationPage(data,{reset:true});
   const peerId=data.application.worker_id===state.user.id?data.application.merchant_id:data.application.worker_id;
   const cached=state.inbox.find(c=>c.application_id===appId);const peer=cached?null:await H.services.merchant.publicProfile(peerId,data.application.worker_id===state.user.id?'merchant':'worker');
-  if(request!==H.chatSequence||state.route!=='chat')return;
+  if(request!==H.chatSequence||navigation!==uxNavigation||!H.isCurrentSession(session)||state.route!=='chat')return;
   state.chatPeer=cached?.peer_name||peer?.name||'工作搭子';
   await H.services.message.read(appId);const read=await H.services.inbox.conversation(appId);
-  if(request!==H.chatSequence||state.route!=='chat')return;state.messages=read.messages;await H.services.inbox.load();render();scrollChatToLatest();
- }catch(e){if(state.route==='chat'){go('messages');toast(H.errorText(e));}}
+  if(request!==H.chatSequence||navigation!==uxNavigation||!H.isCurrentSession(session)||state.route!=='chat')return;H.applyConversationPage(read);await H.services.inbox.load();if(request!==H.chatSequence||navigation!==uxNavigation||!H.isCurrentSession(session)||state.route!=='chat')return;render();scrollChatToLatest();
+ }catch(e){if(request===H.chatSequence&&navigation===uxNavigation&&H.isCurrentSession(session)&&state.route==='chat'){go('messages');toast(H.errorText(e));}}
 }
 function scrollChatToLatest(){requestAnimationFrame(()=>document.getElementById('chatEnd')?.scrollIntoView({block:'end'}));}
 function chat(){
  const a=state.selectedApplication;if(!a){go('messages');return;}const t=getTask(a),canSend=['accepted','completed'].includes(a.status),msgs=state.messages.filter(m=>m.application_id===a.id);
  app.innerHTML=`<section class="chat-shell direct-chat"><div class="chat-head"><button class="back" onclick="go('messages')">← 消息</button><div class="chat-peer"><h3>${esc(state.chatPeer||t?.company_name||'工作搭子')}</h3><div class="muted">${esc(t?.title||'任务沟通')}</div></div><button class="text-btn" onclick="go('orders')">接单记录</button></div><div class="chat-safe">请在站内确认工作安排，不要支付押金或帮助他人转账。</div><div class="chat-list">${msgs.length?msgs.map(m=>m.message_type==='system'?`<div class="chat-system">${esc(m.content)}</div>`:`<div class="msg-row ${m.sender_id===state.user.id?'mine':''}"><div class="msg">${esc(m.content)}<div class="msg-time">${formatTime(m.created_at)} ${m.sender_id===state.user.id?(m.read_at?'已读':'未读'):''}</div></div></div>`).join(''):'<div class="empty">先确认一下到场时间或交付要求吧。</div>'}<div id="chatEnd"></div></div>${canSend?'<div class="chat-input"><input id="chatText" maxlength="2000" aria-label="聊天内容" placeholder="发消息，直接聊聊这单活" onkeydown="if(event.key===\'Enter\'&&!event.isComposing)sendMessage()"><button onclick="sendMessage()">发送</button></div>':'<p class="chat-closed">本次合作已结束，可以查看历史聊天。</p>'}</section>`;
+ restoreDraft(app.querySelector('.chat-input'),'chat',a.id);
+ H.renderHistoryControl();
+ if(H.sendingChat){const button=app.querySelector('.chat-input button');if(button){button.disabled=true;button.textContent='发送中…';}}
+ H.layoutChat?.();
 }
 async function sendMessage(){
  const input=document.getElementById('chatText'),content=input?.value.trim(),a=state.selectedApplication;if(!content||!a||H.sendingChat)return;H.sendingChat=true;
- try{await H.services.message.send(a.id,content);const data=await H.services.inbox.conversation(a.id);await H.services.inbox.load();if(state.route==='chat'&&state.selectedApplication?.id===a.id){const draft=document.getElementById('chatText')?.value;state.messages=data.messages;chat();if(draft&&draft.trim()!==content)document.getElementById('chatText').value=draft;updateHeader();document.getElementById('chatText')?.focus();scrollChatToLatest();}}catch(e){toast(H.errorText(e));}finally{H.sendingChat=false;}
+ const session=H.captureSession(),key=draftKey('chat',a.id),button=app.querySelector('.chat-input button');let sent=false;
+ if(button){button.disabled=true;button.textContent='发送中…';}saveVisibleDrafts();
+ try{await H.services.message.send(a.id,content);sent=true;if(!H.isCurrentSession(session))return;
+  saveVisibleDrafts();const draft=readDraft(key);if(draft?.chatText?.trim()===content){writeDraft(key,null);if(state.route==='chat'&&state.selectedApplication?.id===a.id){const current=document.getElementById('chatText');if(current)current.value='';}}
+  const data=await H.services.inbox.conversation(a.id);await H.services.inbox.load();if(H.isCurrentSession(session)&&state.route==='chat'&&state.selectedApplication?.id===a.id){saveVisibleDrafts();H.applyConversationPage(data);chat();updateHeader();document.getElementById('chatText')?.focus();scrollChatToLatest();}
+ }catch(e){if(H.isCurrentSession(session))toast(sent?'消息已发送，记录刷新失败，请刷新会话查看。':H.errorText(e));}
+ finally{H.sendingChat=false;const current=app.querySelector('.chat-input button');if(current){current.disabled=false;current.textContent='发送';}}
 }
 
 function profile(){
@@ -410,6 +466,7 @@ function showAdvancedFilters(keepDraft=false){
     <div class="filter-group"><h3>结算方式</h3><div class="filter-options">${filterChoice('payMode','全部','不限')}${filterChoice('payMode','日结','日结')}${filterChoice('payMode','周结','周结')}${filterChoice('payMode','月结','月结')}${filterChoice('payMode','完工结','完工结')}</div></div>
     <div class="filter-group"><h3>工作时段</h3><div class="filter-options">${filterChoice('shift','全部','不限')}${filterChoice('shift','白班','白班')}${filterChoice('shift','晚班','晚班')}${filterChoice('shift','周末','周末')}</div></div>
     <div class="filter-group"><div class="filter-group-title"><h3>距离</h3>${needsLocation?'<button class="text-btn" onclick="closeModal();showLocationPicker()">先去定位 ›</button>':''}</div><div class="filter-options">${filterChoice('distance','全部','不限')}${filterChoice('distance','1','1km内')}${filterChoice('distance','3','3km内')}${filterChoice('distance','5','5km内')}${filterChoice('distance','10','10km内')}</div><p class="filter-note">${state.location?'按当前定位计算线下兼职直线距离。':'距离筛选需要先授权定位或使用广州演示位置。'}</p></div>
+    <div class="filter-group salary-filter"><h3>薪资区间</h3>${salaryFields('mobileSalary',d)}</div>
     <div class="filter-actions"><button class="secondary" onclick="closeModal()">取消</button><button class="primary accent" onclick="applyAdvancedFilters()">查看结果</button></div>
   </div></div>`;
 }
@@ -424,7 +481,7 @@ function resetAdvancedFilters(){
   showAdvancedFilters(true);
 }
 function applyAdvancedFilters(){
-  const d={...(state.filterDraft||FILTER_DEFAULTS)};
+  let d;try{d={...(state.filterDraft||FILTER_DEFAULTS),...readSalary('mobileSalary')};}catch(e){toast(H.errorText(e));return;}
   if(d.distance!=='全部'&&!state.location){toast('距离筛选需要先定位');return}
   if(d.workType!=='全部'&&['线下','线上'].includes(state.filter))state.filter='全部';
   if(d.payMode!=='全部'&&state.filter==='日结')state.filter='全部';
@@ -452,12 +509,54 @@ function setFilter(f){
   if(next==='线上'||next==='全部')state.advancedFilters.distance='全部';if(next==='线下'&&state.location)state.advancedFilters.distance='3';state.route='home';render();if(CLOUD_ENABLED)reloadFeed();
   if(next==='线下'&&!state.location)setTimeout(showLocationPicker,0);
 }
-async function openTask(id){try{state.selectedTask=await H.services.task.get(id);if(!state.selectedTask)throw new Error('任务暂不可查看');state.route='detail';render();}catch(e){toast(H.errorText(e));}}
+async function openTask(id){
+ saveVisibleDrafts();const request=++uxNavigation;state.routeTaskId=String(id);state.selectedTask=null;state.taskError='';state.route='detail';render();
+ try{const task=await H.services.task.get(id);if(request!==uxNavigation||state.route!=='detail')return;if(!task)throw new Error('任务可能已下架或当前账户无权查看');state.selectedTask=task;render();}
+ catch(e){if(request!==uxNavigation||state.route!=='detail')return;state.taskError=H.errorText(e);render();}
+}
 
 function setPublishTab(t){state.publishTab=t;render()}
 function setOrderTab(t){state.orderTab=t;render()}
-function go(route){if(route==='notifications'){state.messageTab='notices';route='messages';}else if(route==='messages')state.messageTab='chats';state.route=route;render();if(route==='messages')refreshMessages();}
-function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2100)}
+function go(route){saveVisibleDrafts();++uxNavigation;state.findWork=false;if(route==='notifications'){state.messageTab='notices';route='messages';}else if(route==='messages')state.messageTab='chats';state.route=route;render();if(route==='messages')refreshMessages();else if(CLOUD_ENABLED)H.refreshLive();}
+function toast(msg){const d=document.createElement('div');d.className='toast';d.setAttribute('role','status');d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2100)}
+
+// UI state is scoped to this tab and account; business data still uses shared services.
+let uxRouteReady=false,uxNavigation=0,uxPublishing=false;
+const uxDrafts=new Map();
+function draftKey(kind,id=''){return `${LS_KEY}:draft:${CLOUD_ENABLED?'cloud':'local'}:${state.user?.id||'guest'}:${kind}:${id}`;}
+function readDraft(key){if(uxDrafts.has(key))return uxDrafts.get(key);try{return JSON.parse(sessionStorage.getItem(key)||'null');}catch{return null;}}
+function writeDraft(key,value){uxDrafts.set(key,value);try{if(value)sessionStorage.setItem(key,JSON.stringify(value));else sessionStorage.removeItem(key);}catch{/* In-memory drafts remain available when storage is disabled. */}}
+function saveVisibleDrafts(){app.querySelectorAll('[data-draft-key]').forEach(box=>{const key=box.dataset.draftKey;if(!key)return;const values={};box.querySelectorAll('input[id],select[id],textarea[id]').forEach(input=>{if(input.type!=='file')values[input.id]=input.value;});writeDraft(key,values);});}
+function restoreDraft(box,kind,id=''){
+ if(!box)return;const key=draftKey(kind,id),values=readDraft(key);box.dataset.draftKey=key;
+ box.querySelectorAll('input[id],select[id],textarea[id]').forEach(input=>{if(values&&Object.hasOwn(values,input.id))input.value=values[input.id];const label=input.closest('.field')?.querySelector('label');if(label)label.htmlFor=input.id;});
+}
+app.addEventListener('input',saveVisibleDrafts);app.addEventListener('change',saveVisibleDrafts);window.addEventListener('pagehide',saveVisibleDrafts);
+function routeHash(){
+ if(state.route==='detail')return '#/detail/'+encodeURIComponent(state.selectedTask?.id||state.routeTaskId||'');
+ if(state.route==='chat')return '#/chat/'+encodeURIComponent(state.selectedApplication?.id||state.routeChatId||'');
+ if(state.route==='publicProfile')return '#/publicProfile/'+encodeURIComponent(state.publicProfileId||'')+'/'+(state.publicProfileKind==='merchant'?'merchant':'worker');
+ return '#/'+(['home','publish','orders','profile','favorites','messages'].includes(state.route)?state.route:'home');
+}
+function syncLocation(){
+ const hash=routeHash();if(location.hash===hash)return;
+ const previous=history.state?.huodaUX,depth=previous?.depth||0;
+ if(!previous&&!location.hash)history.replaceState({...history.state,huodaUX:{depth:0}},'',hash);
+ else history.pushState({huodaUX:{depth:depth+1}},'',hash);
+}
+function backRoute(fallback='home'){if(history.state?.huodaUX?.depth>0)history.back();else go(fallback);}
+async function restoreLocation(){
+ saveVisibleDrafts();++uxNavigation;closeModal();
+ if(!history.state?.huodaUX)history.replaceState({...history.state,huodaUX:{depth:0}},'');
+ let parts;try{parts=location.hash.replace(/^#\/?/,'').split('/').map(decodeURIComponent);}catch{parts=[];}
+ const [route,id,kind]=parts;
+ if(route==='detail'&&id){await openTask(id);return;}
+ if(route==='chat'&&id){if(!state.user){state.route='messages';render();showAuth(()=>openChat(id));return;}await openChat(id);return;}
+ if(route==='publicProfile'&&id){await openPublicProfile(id,kind==='merchant'?'merchant':'worker');return;}
+ if(!['home','publish','orders','profile','favorites','messages'].includes(route))history.replaceState(history.state,'','#/home');
+ go(['home','publish','orders','profile','favorites','messages'].includes(route)?route:'home');
+}
+window.addEventListener('popstate',()=>{if(uxRouteReady)restoreLocation();});
 
 Object.assign(window,{go,setFilter,openTask,applyTask,createTask,setPublishTab,setOrderTab,merchantDecision,completeApplication,cancelApplication,openChat,sendMessage,showAuth,authSubmit,closeModal,demoLogin,logout,editProfile,saveProfile,editSkills,saveSkills,showVerification,submitVerification,showReport,submitReport,showAdvancedFilters,pickAdvancedFilter,resetAdvancedFilters,applyAdvancedFilters,showLocationPicker,requestLocation,useDemoLocation,clearLocation,searchNow,clearSearch,setSort,toggleFavorite,favoritesPage,toast});
 
@@ -466,4 +565,4 @@ document.getElementById('accountBtn').addEventListener('click',()=>go('profile')
 document.getElementById('cityBtn').addEventListener('click',showLocationPicker);
 
 
-function updateFeedPager(){document.getElementById('feedPager')?.remove();const list=document.getElementById('taskList');if(!list)return;if(state.feedError){list.innerHTML=`<div class="empty">${esc(state.feedError)}<button class="secondary" onclick="reloadFeed()">重试</button></div>`;}else if(CLOUD_ENABLED&&state.nextCursor!==null)list.insertAdjacentHTML('afterend','<button id="feedPager" class="secondary" onclick="loadMoreTasks()">加载更多兼职</button>');}
+function updateFeedPager(){document.getElementById('feedPager')?.remove();const list=document.getElementById('taskList');if(!list)return;if(state.feedError){if(state.tasks.length&&state.nextCursor!==null)list.insertAdjacentHTML('afterend',`<div id="feedPager" class="empty" role="status"><p>${esc(state.feedError)}</p><button class="secondary" onclick="loadMoreTasks()">重试加载更多</button></div>`);else list.innerHTML=`<div class="empty" role="status">${esc(state.feedError)}<button class="secondary" onclick="reloadFeed()">重试</button></div>`;}else if(CLOUD_ENABLED&&state.nextCursor!==null)list.insertAdjacentHTML('afterend','<button id="feedPager" class="secondary" onclick="loadMoreTasks()">加载更多兼职</button>');}

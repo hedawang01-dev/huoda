@@ -7,6 +7,8 @@
   <meta name="description" content="活搭 HUODA：附近兼职 + 线上技能单，一个地方都能找。" />
   <title>活搭 HUODA - 线上线下兼职平台</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="responsive.css" />
+  <link rel="stylesheet" href="status.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -15,13 +17,28 @@
         <span class="brand-mark">H</span>
         <span class="brand-copy"><strong>活搭</strong><small>HUODA</small></span>
       </button>
+      <nav class="desktop-nav" aria-label="主导航">
+        <button data-desktop-route="home" onclick="go('home')">首页</button>
+        <button data-desktop-route="find" onclick="goFindWork()">找活</button>
+        <button data-desktop-route="publish" onclick="go('publish')">发布兼职</button>
+        <button data-desktop-route="messages" onclick="go('messages')">消息 <span id="desktopMessageBadge" class="inbox-badge" hidden></span></button>
+        <button data-desktop-route="profile" onclick="go('profile')">我的</button>
+      </nav>
+      <form class="nav-search" role="search" onsubmit="submitNavSearch(event)">
+        <span aria-hidden="true">⌕</span>
+        <input id="homeSearch" type="search" aria-label="搜索兼职" placeholder="搜兼职、技能、公司、地点" oninput="searchNow(this.value)" autocomplete="off">
+        <button id="navSearchClear" type="button" aria-label="清空搜索" onclick="clearSearch()" hidden>×</button>
+        <button class="nav-search-submit" type="submit" aria-label="搜索">搜索</button>
+      </form>
       <div class="top-actions">
+        <button class="merchant-entry" onclick="openMerchantDesk()">商家入口</button>
         <button class="city-btn" id="cityBtn">广州 ▾</button>
-        <button class="avatar-btn" id="notificationBtn" onclick="go('notifications')" aria-label="通知中心">♧</button><button class="avatar-btn" id="accountBtn" aria-label="账户">游</button>
+        <button class="avatar-btn" id="accountBtn" aria-label="账户">游</button>
       </div>
     </header>
 
     <div class="mode-strip" id="modeHint">本地演示 · 数据自动保存</div>
+    <div class="sync-status" id="syncStatus" role="status" aria-live="polite" hidden><span></span><button type="button" onclick="H.refreshLive()">重新更新</button></div>
     <main id="app"></main>
 
     <nav class="bottom-nav">
@@ -49,6 +66,9 @@
   <script src="src/services/authService.js"></script>
   <script src="src/pages/community.js"></script>
   <script src="src/pages/messages.js"></script>
+  <script src="src/pages/chatHistory.js"></script>
+  <script src="src/pages/responsive.js"></script>
+  <script src="src/core/sync.js"></script>
   <script src="src/core/bootstrap.js"></script>
 </body>
 </html>

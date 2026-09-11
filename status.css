@@ -1,0 +1,6 @@
+.sync-status {max-width:1400px;margin:0 auto;padding:10px 24px;background:#fff4df;color:#684500;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.sync-status[hidden] {display:none;}
+.sync-status button {flex-shrink:0;background:transparent;border:1px solid currentColor;border-radius:8px;padding:7px 12px;color:inherit;font:inherit;cursor:pointer;}
+.sync-status button:focus-visible {outline:3px solid #111315;outline-offset:3px;}
+.chat-history-more {display:block;margin:0 auto 16px;font-size:12px;}
+@media(max-width:767px){.sync-status{padding:10px 16px;font-size:12px;}}

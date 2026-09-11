@@ -12,8 +12,24 @@ H.services.inbox={
   return {items:items.filter(c=>!q||c._search.includes(q)),chat_unread:items.reduce((n,c)=>n+c.unread_count,0),notice_unread:(db.notifications||[]).filter(n=>n.user_id===user&&n.type!=='message'&&!n.read_at).length};
  },
  async load(){const seq=H.inboxSequence=(H.inboxSequence||0)+1,user=state.user?.id;const result=await this.list(state.inboxQuery||'');if(seq!==H.inboxSequence||user!==state.user?.id)return false;state.inbox=result.items;state.chatUnread=Number(result.chat_unread);state.noticeUnread=Number(result.notice_unread);state.inboxError='';return true;},
- async conversation(id){
-  if(CLOUD_ENABLED){const a=H.unwrap(await sb.from('applications').select('*,tasks(*)').eq('id',id).single());const messages=H.unwrap(await sb.from('messages').select('*').eq('application_id',id).order('created_at',{ascending:false}).limit(200));return {application:a,messages:messages.reverse()};}
-  const db=localDb(),a=db.applications.find(a=>a.id===id&&[a.worker_id,a.merchant_id].includes(H.auth()));if(!a)H.fail('FORBIDDEN');return {application:a,messages:db.messages.filter(m=>m.application_id===id)};
+ // One bounded page. Callers retain/merge loaded history and explicitly pass
+ // next_cursor as before when requesting older messages. Null means latest.
+ async conversation(id,{before=null}={}){
+  const session=H.services.auth.capture();
+  if(before!==null&&(typeof before!=='object'||Array.isArray(before)||typeof before.created_at!=='string'||!Number.isFinite(Date.parse(before.created_at))||typeof before.id!=='string'||!before.id))H.fail('INVALID_PAGE');
+  // Keep the server's timestamp string intact (PostgreSQL has microseconds).
+  const cursor=before===null?null:{created_at:before.created_at,id:before.id};
+  if(CLOUD_ENABLED){
+   const a=H.unwrap(await sb.from('applications').select('*,tasks(*)').eq('id',id).single());H.services.auth.assertCurrent(session);
+   const page=await H.rpc('get_conversation_messages',{p_application_id:id,p_before_at:cursor?.created_at??null,p_before_id:cursor?.id??null,p_limit:200});
+   H.services.auth.assertCurrent(session);
+   return {application:a,messages:[...page.items].reverse(),next_cursor:page.next_cursor};
+  }
+  const db=localDb(),a=db.applications.find(a=>a.id===id&&[a.worker_id,a.merchant_id].includes(session.id));if(!a)H.fail('FORBIDDEN');
+  const cutoff=cursor?Date.parse(cursor.created_at):null;
+  const rows=db.messages.filter(m=>m.application_id===id&&(!cursor||Date.parse(m.created_at)<cutoff||(Date.parse(m.created_at)===cutoff&&String(m.id)<cursor.id)))
+   .sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)||(String(a.id)<String(b.id)?1:String(a.id)>String(b.id)?-1:0));
+  const messages=rows.slice(0,200),last=messages.at(-1);
+  return {application:a,messages:messages.reverse(),next_cursor:rows.length>200?{created_at:last.created_at,id:last.id}:null};
  }
 };
