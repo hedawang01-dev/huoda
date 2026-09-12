@@ -81,4 +81,4 @@
 
 ## 验收边界
 
-当前尚无真实 Supabase/Vercel 项目，所以上述真实 PostGIS、Auth 邮件、WebSocket Realtime、Storage、Edge Function、跨连接并发和公网设备验收仍待执行。本地 PGlite、模拟 SDK 和浏览器测试只证明代码与 SQL 合同可运行，不证明外部服务已经上线。
+真实 Supabase 已完成基础迁移与 001–006、Storage 桶和 Edge Function 部署，且已验证游客搜索 RPC 与匿名 RLS 拒绝。Auth 邮件、双账号 WebSocket Realtime、真实执照上传、后台完整处理、跨连接并发和 Vercel 公网设备验收仍待执行；本地 PGlite 与模拟 SDK 结果不能替代这些剩余场景。

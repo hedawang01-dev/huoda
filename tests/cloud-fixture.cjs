@@ -19,9 +19,10 @@ module.exports=async function fixture(){
  create function extensions.st_setsrid(point,integer) returns point language sql immutable as $$select $1$$;
  create function extensions.st_distance(point,point) returns double precision language sql immutable as $$select ($1 <-> $2)*111000$$;
  create function extensions.st_dwithin(point,point,double precision) returns boolean language sql immutable as $$select extensions.st_distance($1,$2)<=$3$$;`);
- await db.exec(fs.readFileSync(path.join(root,'supabase.sql'),'utf8').replace('create extension if not exists pgcrypto;',''));
- for(const file of fs.readdirSync(path.join(root,'supabase/migrations')).sort()){
-  let sql=fs.readFileSync(path.join(root,'supabase/migrations',file),'utf8');sql=sql.replace('create extension if not exists postgis with schema extensions;','').replace(/do \$\$ begin\s+if \(select n\.nspname[\s\S]+?end \$\$;/,'').replace(/extensions\.geography\(Point,4326\)/g,'point').replace(/extensions\.geography/g,'point');await db.exec(sql);
+ const migrationFiles=fs.readdirSync(path.join(root,'supabase/migrations')).sort();
+ if(!migrationFiles.includes('202609090000_base_schema.sql'))await db.exec(fs.readFileSync(path.join(root,'supabase.sql'),'utf8').replace('create extension if not exists pgcrypto;',''));
+ for(const file of migrationFiles){
+  let sql=fs.readFileSync(path.join(root,'supabase/migrations',file),'utf8');sql=sql.replace('create extension if not exists pgcrypto;','').replace('create extension if not exists postgis with schema extensions;','').replace(/do \$\$ begin\s+if \(select n\.nspname[\s\S]+?end \$\$;/,'').replace(/extensions\.geography\(Point,4326\)/g,'point').replace(/extensions\.geography/g,'point');await db.exec(sql);
  }
  for(const [name,id]of Object.entries(ids))await db.query('insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)',[id,name+'@huoda.test',JSON.stringify({name})]);
  await db.query("insert into merchant_profiles(user_id,company_name,verification_status) values($1,'共享云端测试商家','verified')",[ids.merchant]);

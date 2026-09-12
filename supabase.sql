@@ -2,6 +2,8 @@
 -- 可用于全新项目，也可在 v0.2 数据库上执行升级。
 -- 在 Supabase Dashboard -> SQL Editor 中执行。
 
+begin;
+
 create extension if not exists pgcrypto;
 
 -- 1) 用户资料
@@ -263,3 +265,5 @@ for each row execute procedure public.handle_new_user();
 -- update tasks set review_status='approved' where id='...';
 -- update reports set status='resolved' where id='...';
 -- service_role 绝不能写入 config.js 或任何公开前端代码。
+
+commit;

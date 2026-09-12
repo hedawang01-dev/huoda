@@ -6,9 +6,9 @@
 
 ## 全新 Supabase 项目
 
-在 SQL Editor 严格按顺序执行：
+使用 Supabase CLI 时，严格按迁移目录顺序执行：
 
-1. supabase.sql
+1. supabase/migrations/202609090000_base_schema.sql
 2. supabase/migrations/202609100001_v050_foundation.sql
 3. supabase/migrations/202609100002_task_edit.sql
 4. supabase/migrations/202609100003_message_inbox.sql
@@ -16,11 +16,13 @@
 6. supabase/migrations/202609110005_service_hardening.sql
 7. supabase/migrations/202609120006_v054_cloud_lifecycle.sql
 
+`202609090000_base_schema.sql` 与根目录 `supabase.sql` 内容和 SHA256 必须一致；前者供 CLI 执行，后者保留给人工审阅。两者是同一份基础架构，不能分别执行。运行 `npm run check:migrations` 会检查一致性、执行顺序、事务边界以及重复表/policy/function 的替换保护。
+
 supabase/seed.sql 只供隔离测试项目使用，生产库禁止执行。
 
 ## 已运行 5.3 的项目
 
-确认迁移记录中已经完成 001–005 后，只执行 202609120006_v054_cloud_lifecycle.sql。不要重新运行 supabase.sql，它包含早期基线权限，重复覆盖会破坏最终 RLS/RPC 边界。
+确认迁移记录中已经完成基础迁移与 001–005 后，只执行 202609120006_v054_cloud_lifecycle.sql。不要重新运行 supabase.sql 或 202609090000_base_schema.sql，它们包含早期基线权限，重复覆盖会破坏最终 RLS/RPC 边界。
 
 ## 006 做了什么
 
@@ -51,10 +53,10 @@ supabase/seed.sql 只供隔离测试项目使用，生产库禁止执行。
 
 部署审核函数：
 
-    supabase login
-    supabase link --project-ref YOUR_PROJECT_REF
-    supabase secrets set ADMIN_ALLOWED_ORIGINS=https://YOUR_VERCEL_DOMAIN
-    supabase functions deploy admin-review
+    npx supabase login
+    npx supabase link --project-ref YOUR_PROJECT_REF
+    npx supabase secrets set ADMIN_ALLOWED_ORIGINS=https://YOUR_VERCEL_DOMAIN
+    npx supabase functions deploy admin-review --use-api
 
 不要把浏览器以外的高权限 key 写入前端、GitHub 或 Vercel。Supabase Edge Function 运行环境提供服务端变量。
 

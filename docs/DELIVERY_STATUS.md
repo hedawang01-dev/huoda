@@ -17,9 +17,9 @@
 
 ## 仍需真实外部项目
 
-- [ ] 创建活搭 GitHub 仓库并推送本地提交/tag。
-- [ ] 创建 Supabase 项目并执行 001–006、部署 Edge Function。
+- [x] GitHub 仓库已创建，`main` 与 `v5.3-stable` 已推送。
+- [x] Supabase 项目已连接，基础迁移与 001–006、私有 Storage、Edge Function 已部署。
 - [ ] 创建 Vercel 项目、填写两项公开环境变量并发布。
-- [ ] 在真实手机与电脑完成 Auth、Database、Realtime、Storage、后台和并发验收。
+- [ ] 在真实双账号手机与电脑完成 Auth、Realtime、Storage 上传、后台和并发验收。
 
 本地 SQL/RLS、模拟 Supabase SDK 和浏览器回归用于验证代码契约，不能替代真实云端和公网验收。

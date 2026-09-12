@@ -16,6 +16,7 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=high
       - run: npm run check
+      - run: npm run check:migrations
       - run: npx playwright install --with-deps chromium
       - run: npm start > huoda-server.log 2>&1 &
       - run: |

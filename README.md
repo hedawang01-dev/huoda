@@ -2,7 +2,7 @@
 
 活搭 5.4（包版本 0.5.4）在原 5.3 纯 HTML/CSS/JavaScript 项目上增量升级，保留现有品牌、页面结构、顶部搜索、PC/手机响应式布局和消息返回体验。前端没有改成 React 或 Vue。
 
-当前源码已具备本地演示、Supabase 云端数据结构、统一 Service 数据访问、业务状态闭环和 GitHub + Vercel 生产构建。由于尚未创建真实 Supabase、GitHub 仓库和 Vercel 项目，公网与真实跨设备验收仍需按本文步骤完成；本地合同测试不能冒充真实上线。
+当前源码已具备本地演示、Supabase 云端数据结构、统一 Service 数据访问、业务状态闭环和 GitHub + Vercel 生产构建。GitHub 仓库与 Supabase 项目已连接，基础迁移和 001–006、私有 Storage 及 `admin-review` Edge Function 已部署；Vercel 公网部署与真实双账号跨设备验收仍需完成。
 
 ## 5.4 已完成
 
@@ -40,7 +40,7 @@
     ├─ src/core/                  Service 注册、同步、启动
     ├─ src/pages/                 消息、档案、响应式与聊天历史
     ├─ src/services/              Auth、任务、报名、收藏、消息等 13 个 Service
-    ├─ supabase/migrations/       001–006 增量迁移
+    ├─ supabase/migrations/       基础迁移与 001–006 增量迁移
     ├─ supabase/functions/        admin-review Edge Function
     ├─ scripts/                   本地服务、检查、构建、dist 校验
     ├─ tests/                     SQL/RLS、浏览器、跨端和部署测试
@@ -83,10 +83,14 @@
 
 生成的 dist/config.js 会包含这两项公开浏览器连接信息。数据库密码、Secret key、Service Role key、管理员密码不得写入源码、config.js、GitHub 或 Vercel。
 
-## 新建 Supabase 项目
+## Supabase 项目状态
+
+当前项目已连接 Project Ref `qzhlyuqwsmpirofwjxko`。本机 `config.js` 使用公开 Project URL 与 Publishable Key 连接远程数据，并继续由 Git 忽略。部署记录见 `docs/V054_Supabase部署报告.md`。
+
+若以后需要重建一个全新 Supabase 项目：
 
 1. 打开 https://supabase.com/dashboard，创建项目并自行保管数据库密码。
-2. 在 SQL Editor 按 MIGRATION.md 的顺序运行 supabase.sql 和 001–006；生产库不要运行 seed.sql。
+2. 使用 Supabase CLI 按 MIGRATION.md 的顺序 dry-run 并部署基础迁移与 001–006；生产库不要运行 seed.sql。根目录 supabase.sql 只是基础迁移的人工审阅副本，不要另行重复执行。
 3. 在 Project Connect/API Keys 中复制 Project URL 和 publishable key。它们是浏览器公开连接信息，不是数据库密码。
 4. 在 Authentication → URL Configuration 中，先填本地地址，Vercel 发布后再加入正式 HTTPS 域名。
 5. 注册管理员账号后，只在 SQL Editor 将该账号写入 admin_users；普通前端无权授予管理员。
