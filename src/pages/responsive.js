@@ -17,8 +17,8 @@ function setDesktopFilter(key,value){const draft={...state.advancedFilters,[key]
 function resetDesktopFilters(){state.filter='全部';state.advancedFilters={...FILTER_DEFAULTS};render();if(CLOUD_ENABLED)reloadFeed();}
 function applyDesktopSalary(){try{state.advancedFilters={...state.advancedFilters,...readSalary('desktopSalary')};render();if(CLOUD_ENABLED)reloadFeed();}catch(e){toast(H.errorText(e));}}
 H.homeAsideMarkup=()=>{
- const top=state.tasks.filter(t=>t.status==='open'&&t.review_status==='approved'&&t.spots_left>0).sort((a,b)=>matchScore(b)-matchScore(a)||new Date(b.created_at)-new Date(a.created_at)).slice(0,3);
- return `<section class="aside-matches"><span class="eyebrow">GOOD WORK, GOOD FIT</span><h2>${state.profile?.skills?.length?'为你匹配':'新近好活'}</h2><p class="aside-intro">${state.profile?.skills?.length?'结合技能、距离与发布时间':'完善技能，让匹配更懂你'}</p>${top.length?top.map(t=>`<button class="aside-match" onclick="openTask('${esc(t.id)}')"><strong>${esc(t.title)}</strong><span>${esc(t.company_name||'商家')}</span><b>${priceLabel(t)}</b></button>`).join(''):'<p class="muted">当前条件下暂无推荐</p>'}</section><section class="aside-safety"><span class="safety-symbol">✓</span><h3>放心接活，从看清开始</h3><ul><li>不提前收取押金</li><li>警惕私下转账</li><li>优先选择已认证商家</li></ul></section>${state.user?`<section class="aside-account"><button onclick="go('favorites')">我的收藏 <b>${state.favorites.length} ›</b></button><button onclick="state.profileSection='active';go('profile')">进行中的任务 <b>${state.applications.filter(a=>a.status==='accepted').length} ›</b></button></section>`:''}`;
+ const top=state.tasks.filter(t=>t.status==='recruiting'&&t.review_status==='approved'&&t.spots_left>0).sort((a,b)=>matchScore(b)-matchScore(a)||new Date(b.created_at)-new Date(a.created_at)).slice(0,3);
+ return `<section class="aside-matches"><span class="eyebrow">GOOD WORK, GOOD FIT</span><h2>${state.profile?.skills?.length?'为你匹配':'新近好活'}</h2><p class="aside-intro">${state.profile?.skills?.length?'结合技能、距离与发布时间':'完善技能，让匹配更懂你'}</p>${top.length?top.map(t=>`<button class="aside-match" onclick="openTask('${esc(t.id)}')"><strong>${esc(t.title)}</strong><span>${esc(t.company_name||'商家')}</span><b>${priceLabel(t)}</b></button>`).join(''):'<p class="muted">当前条件下暂无推荐</p>'}</section><section class="aside-safety"><span class="safety-symbol">✓</span><h3>放心接活，从看清开始</h3><ul><li>不提前收取押金</li><li>警惕私下转账</li><li>优先选择已认证商家</li></ul></section>${state.user?`<section class="aside-account"><button onclick="go('favorites')">我的收藏 <b>${state.favorites.length} ›</b></button><button onclick="state.profileSection='active';go('profile')">进行中的任务 <b>${state.applications.filter(a=>['applied','viewed','communicating','accepted'].includes(a.status)).length} ›</b></button></section>`:''}`;
 };
 H.refreshHomeAside=()=>{const aside=document.getElementById('homeAside');if(aside)aside.innerHTML=H.homeAsideMarkup();};
 H.layoutHome=()=>{
@@ -33,7 +33,7 @@ H.layoutDetail=(task,applied)=>{
  const credit=document.createElement('section');credit.className='detail-card detail-credit desktop-only';credit.innerHTML='<h3>商家评分与评价</h3><p class="muted">正在读取真实合作评价…</p>';body.firstChild.insertBefore(credit,body.querySelector('.safety-card'));
  H.services.merchant.publicProfile(task.owner_id,'merchant').then(p=>{if(!credit.isConnected)return;credit.innerHTML=`<h3>商家评分与评价</h3><p class="muted">${p?.rating_avg==null?'暂无评分':esc(p.rating_avg)+' / 5 分'} · 完成 ${p?.completed_count||0} 单</p>${(p?.reviews||[]).slice(0,3).map(r=>`<div class="review-entry"><b>${'★'.repeat(r.rating)}</b><p>${esc(r.comment||'未填写文字评价')}</p></div>`).join('')||'<p class="muted">暂无评价，完成合作后可留下真实反馈。</p>'}<button class="text-btn" onclick="openPublicProfile('${esc(task.owner_id)}','merchant')">查看完整商家主页 ›</button>`;}).catch(e=>{if(credit.isConnected)credit.innerHTML=`<p>${esc(H.errorText(e))}</p><button class="secondary" onclick="render()">重新加载评价</button>`;});
 };
-function contactTaskMerchant(id){if(!requireLogin(()=>contactTaskMerchant(id)))return;const a=state.applications.find(a=>a.task_id===id&&['accepted','completed'].includes(a.status)&&a.worker_id===state.user.id);if(a)return openChat(a.id);toast('商家确认报名后即可联系，请先报名并等待确认');}
+function contactTaskMerchant(id){if(!requireLogin(()=>contactTaskMerchant(id)))return;const a=state.applications.find(a=>a.task_id===id&&['communicating','accepted','completed'].includes(a.status)&&a.worker_id===state.user.id);if(a)return openChat(a.id);toast('商家发起沟通后即可联系，请先报名并等待商家查看');}
 H.layoutChat=()=>{
  const pane=app.querySelector('.direct-chat');if(!pane)return;
  app.insertAdjacentHTML('afterbegin','<div class="chat-page-back"><button class="back" onclick="go(\'messages\')">← 返回上一级</button></div>');
@@ -43,7 +43,7 @@ H.layoutMessages=()=>{const page=app.querySelector('.inbox-page');if(!page||page
 function setProfileSection(section){state.profileSection=section;profile();H.layout();}
 function profileContent(section){const p=state.profile,worker=state.applications.filter(a=>a.worker_id===state.user.id),merchant=state.applications.filter(a=>a.merchant_id===state.user.id);
  if(section==='applications')return '<h2>我的报名</h2>'+workerOrders(worker);
- if(section==='active')return '<h2>进行中的活</h2>'+workerOrders(worker.filter(a=>a.status==='accepted'));
+ if(section==='active')return '<h2>进行中的活</h2>'+workerOrders(worker.filter(a=>['applied','viewed','communicating','accepted'].includes(a.status)));
  if(section==='posts')return publishedList(state.ownTasks);
  if(section==='manage')return '<h2>报名管理</h2>'+merchantOrders(merchant);
  if(section==='favorites')return '<h2>我的收藏</h2><div id="profileFavorites" class="task-list"><p class="muted">正在读取收藏…</p></div>';

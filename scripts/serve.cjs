@@ -1,6 +1,6 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const publicFiles=new Set(['index.html','app.js','style.css','responsive.css','status.css','config.js','vendor/supabase-2.57.4.js','admin/index.html','admin/admin.js']);
+const publicFiles=new Set(['index.html','app.js','style.css','responsive.css','status.css','config.js','vendor/supabase-2.57.4.js','admin/index.html','admin/adminService.js','admin/admin.js']);
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
 function handler(req,res){
   res.setHeader('X-Content-Type-Options','nosniff');

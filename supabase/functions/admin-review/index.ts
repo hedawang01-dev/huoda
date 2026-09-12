@@ -25,7 +25,9 @@ Deno.serve(async(req:Request)=>{
    const table=({merchant:'merchant_profiles',task:'tasks',report:'reports'} as Record<string,string>)[body.kind];
    if(!table)return reply(400,{error:{code:'INVALID_KIND',message:'审核类型无效'}});
    const column=body.kind==='merchant'?'verification_status':body.kind==='task'?'review_status':'status';
-   const {data,error}=await server.from(table).select('*').eq(column,body.kind==='report'?'open':'pending').order('created_at',{ascending:true}).limit(100);
+   let query=server.from(table).select('*').eq(column,body.kind==='report'?'open':'pending');
+   if(body.kind==='task')query=query.eq('status','pending_review');
+   const {data,error}=await query.order('created_at',{ascending:true}).limit(100);
    if(error)throw error;return reply(200,{data});
   }
   if(body.action==='license'){

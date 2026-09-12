@@ -47,7 +47,7 @@ async function seed(page){
   const users=[{id:'review-worker',name:'回归求职者',role:'worker'},
    {id:'review-merchant',name:'回归商家',role:'merchant',company_name:'回归测试公司',verification_status:'verified'},
    {id:'review-other',name:'回归另一账号',role:'worker'}].map(u=>({...u,email:u.id+'@example.test',city:'广州',skills:[],active:false}));
-  const task={id:'review-task',owner_id:'review-merchant',type:'online',title:'回归独立任务',price:180,price_fen:18000,price_unit:'次',pay_mode:'完工结',time_text:'明天交付',location:'线上',city:'广州',description:'隔离浏览器中的测试数据',tags:['回归'],company_name:'回归测试公司',verified:true,review_status:'approved',status:'open',spots_total:2,spots_left:1,created_at:now};
+  const task={id:'review-task',owner_id:'review-merchant',type:'online',title:'回归独立任务',price:180,price_fen:18000,price_unit:'次',pay_mode:'完工结',time_text:'明天交付',location:'线上',city:'广州',description:'隔离浏览器中的测试数据',tags:['回归'],company_name:'回归测试公司',verified:true,review_status:'approved',status:'recruiting',spots_total:2,spots_left:1,created_at:now};
   const application={id:'review-application',task_id:task.id,worker_id:'review-worker',merchant_id:'review-merchant',status:'accepted',created_at:now};
   await H.localWrite(db=>{db.users.push(...users);db.tasks.push(task);db.applications.push(application);db.favoritesByUser['review-worker']=[task.id];});
   window.__reviewLogin=async id=>{
@@ -202,7 +202,7 @@ for(let run=1;run<=repeats;run++){
    const {worker,merchant,admin}=fixture.ids;
    const as=async id=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role','authenticated',false)",[id]);await db.exec('set role authenticated');};
    const scalar=async(sql,args=[])=>Object.values((await db.query(sql,args)).rows[0])[0];
-   const taskId=await scalar("select id from public.tasks where owner_id=$1 and status='open' and review_status='approved' limit 1",[merchant]);
+   const taskId=await scalar("select id from public.tasks where owner_id=$1 and status='recruiting' and review_status='approved' limit 1",[merchant]);
    assert.ok(taskId);
    await as(worker);const application=await scalar('select to_jsonb(public.apply_to_task($1))',[taskId]);
    await as(merchant);await db.query('select public.accept_application($1)',[application.id]);
@@ -248,7 +248,7 @@ for(let run=1;run<=repeats;run++){
     once=false;await gate;
     await route.fulfill({contentType:'application/json',body:JSON.stringify([{id:'review-private-notice',user_id:fixture.ids.worker,type:'moderation',title:'A账号私有审核结果',body:'仅A账号可见的举报处理详情',data:{},read_at:null,created_at:new Date().toISOString()}])});
    });
-   await page.evaluate(()=>{state.route='messages';state.messageTab='chats';messagesPage();window.__oldNotificationRefresh=refreshMessages();});
+    await page.evaluate(()=>{state.route='messages';state.messageTab='notices';messagesPage();window.__oldNotificationRefresh=refreshMessages();});
    await started;
    await page.evaluate(async()=>{const {error}=await sb.auth.signOut();if(error)throw error;});
    await page.waitForFunction(()=>state.user===null);

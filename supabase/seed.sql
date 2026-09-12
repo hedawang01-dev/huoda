@@ -20,7 +20,7 @@ begin
   values(task_id,merchant,case when i%3=0 then 'online' else 'offline' end,
    case when i%3=0 then '电商设计主图精修' else '广州活动协助' end||' · 测试 '||i,
    100+i*5,(100+i*5)*100,'次',case when i%3=0 then '完工结' when i%2=0 then '周结' else '日结' end,
-   '按约定完成后结算','周末白班 10:00–16:00',case when i%3=0 then '线上' else '广州·越秀区（测试点）' end,'广州',array['PS','周末','白班'],'南屿电商（测试）','仅用于功能验收的测试任务，不是真实招聘。',2,2,'open','approved',true,case when i%3=0 then '设计' else '活动执行' end,'白班',
+   '按约定完成后结算','周末白班 10:00–16:00',case when i%3=0 then '线上' else '广州·越秀区（测试点）' end,'广州',array['PS','周末','白班'],'南屿电商（测试）','仅用于功能验收的测试任务，不是真实招聘。',2,2,'recruiting','approved',true,case when i%3=0 then '设计' else '活动执行' end,'白班',
    case when i%3<>0 then 23.1291+i*0.001 end,case when i%3<>0 then 113.2644+i*0.001 end,
    case when i%3<>0 then 'WGS84' end,case when i%3<>0 then extensions.st_setsrid(extensions.st_makepoint(113.2644+i*0.001,23.1291+i*0.001),4326)::extensions.geography end)
   on conflict(id) do nothing;

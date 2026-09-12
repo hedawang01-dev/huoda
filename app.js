@@ -1,9 +1,11 @@
 const CFG = window.HUODA_CONFIG || window.FINDWORK_CONFIG || {};
 const CLOUD_REQUESTED = Boolean(CFG.SUPABASE_URL || CFG.SUPABASE_KEY);
+const PRODUCTION_MODE = CFG.ENVIRONMENT === 'production';
 let CLOUD_ENABLED = false;
 let sb = null;
 
 async function ensureCloudClient(){
+  if(PRODUCTION_MODE&&!CLOUD_REQUESTED)throw new Error('正式环境缺少云端配置，已停止加载本地演示数据。');
   if(!CLOUD_REQUESTED)return;
   if(!CFG.SUPABASE_URL||!CFG.SUPABASE_KEY)throw new Error('云端配置尚未填完整，请同时填写项目 URL 和公开 key。未切换本地演示。');
   if(!window.supabase?.createClient){
@@ -23,17 +25,16 @@ const app = document.getElementById('app');
 const modalRoot = document.getElementById('modalRoot');
 const LS_KEY = 'huoda_mvp_v050';
 const OLD_LS_KEY = 'huoda_v050_no_legacy_import';
-const FAV_KEY = 'huoda_favorites_v050_guest';
 
 const seedTasks = [
-  {id:'demo-1',type:'offline',category:'活动执行',title:'琶洲展会协助｜4小时',price:120,price_unit:'次',settlement:'完工后2小时内',pay_mode:'日结',time_text:'今天 14:00-18:00',location:'广州·海珠区·琶洲',lat:23.1043,lng:113.3847,tags:['日结','无需经验'],company_name:'广马会展服务',description:'协助展台物料摆放、现场引导和简单收尾。穿黑色长裤、运动鞋即可。\n\n到场后按负责人指引签到，工作结束后现场确认工时。',spots_total:5,spots_left:3,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-demo',created_at:Date.now()-3600000},
-  {id:'demo-2',type:'online',category:'设计',title:'淘宝主图精修 5 张',price:180,price_unit:'单',settlement:'验收后确认完成',pay_mode:'完工结',time_text:'24小时内交付',location:'线上',lat:null,lng:null,tags:['PS','电商设计'],company_name:'南屿电商',description:'提供产品原图和参考样式，要求完成基础精修、光影统一与版式优化。\n\n交付 JPG + 可编辑源文件，修改不超过 2 轮。',spots_total:1,spots_left:1,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-demo',created_at:Date.now()-2500000},
-  {id:'demo-3',type:'offline',category:'门店兼职',title:'咖啡店晚班兼职',price:25,price_unit:'小时',settlement:'每周一结算',pay_mode:'周结',time_text:'今晚 18:00-22:00',location:'广州·天河区·体育西',lat:23.1325,lng:113.3213,tags:['晚班','可长期'],company_name:'木森咖啡',description:'负责简单饮品辅助、收桌、打包与门店清洁。有服务业经验优先，没有经验可现场教学。',spots_total:2,spots_left:2,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-2',created_at:Date.now()-7200000},
-  {id:'demo-4',type:'online',category:'视频',title:'短视频粗剪｜3条',price:150,price_unit:'单',settlement:'验收后结算',pay_mode:'完工结',time_text:'今晚可做',location:'线上',lat:null,lng:null,tags:['剪映','短视频'],company_name:'栖木传媒',description:'素材已整理，每条 30-60 秒，按脚本完成粗剪、字幕和基础转场。无需包装特效。',spots_total:2,spots_left:2,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-3',created_at:Date.now()-5400000},
-  {id:'demo-5',type:'offline',category:'商超零工',title:'商场理货补货｜6小时',price:168,price_unit:'次',settlement:'次日中午前结算',pay_mode:'日结',time_text:'明天 10:00-16:00',location:'广州·越秀区·北京路',lat:23.1259,lng:113.2709,tags:['日结','体力活'],company_name:'禾仓零售服务',description:'协助商品上架、补货、纸箱整理。需要能连续站立工作，现场提供工作手套。',spots_total:4,spots_left:4,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-4',created_at:Date.now()-8600000},
-  {id:'demo-6',type:'online',category:'运营',title:'小红书笔记排版 8 篇',price:240,price_unit:'单',settlement:'交付通过后结算',pay_mode:'完工结',time_text:'2天内交付',location:'线上',lat:null,lng:null,tags:['小红书','排版','运营'],company_name:'白鲸工作室',description:'文案和图片素材由商家提供，负责封面统一、正文图片排版和基础发布格式整理。',spots_total:1,spots_left:1,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-5',created_at:Date.now()-9600000},
-  {id:'demo-7',type:'offline',category:'门店兼职',title:'周末书店整理员｜白班',price:22,price_unit:'小时',settlement:'每月 10 日统一结算',pay_mode:'月结',time_text:'周六日 10:00-18:00',location:'广州·天河区·珠江新城',lat:23.1192,lng:113.3267,tags:['周末','白班','可长期'],company_name:'拾页书店',description:'负责图书归位、简单陈列、顾客指引和闭店前整理。适合希望固定周末兼职的人群。',spots_total:3,spots_left:2,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-6',created_at:Date.now()-10800000},
-  {id:'demo-8',type:'offline',category:'仓储兼职',title:'仓库分拣白班｜8小时',price:208,price_unit:'次',settlement:'每周五结算',pay_mode:'周结',time_text:'工作日 09:00-18:00',location:'广州·白云区·嘉禾望岗',lat:23.2378,lng:113.2898,tags:['白班','周结','无需经验'],company_name:'迅仓供应链',description:'按区域完成轻小件分拣、扫码和装筐，现场培训后上岗。需要能连续站立工作。',spots_total:6,spots_left:5,status:'open',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-7',created_at:Date.now()-12600000}
+  {id:'demo-1',type:'offline',category:'活动执行',title:'琶洲展会协助｜4小时',price:120,price_unit:'次',settlement:'完工后2小时内',pay_mode:'日结',time_text:'今天 14:00-18:00',location:'广州·海珠区·琶洲',lat:23.1043,lng:113.3847,tags:['日结','无需经验'],company_name:'广马会展服务',description:'协助展台物料摆放、现场引导和简单收尾。穿黑色长裤、运动鞋即可。\n\n到场后按负责人指引签到，工作结束后现场确认工时。',spots_total:5,spots_left:3,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-demo',created_at:Date.now()-3600000},
+  {id:'demo-2',type:'online',category:'设计',title:'淘宝主图精修 5 张',price:180,price_unit:'单',settlement:'验收后确认完成',pay_mode:'完工结',time_text:'24小时内交付',location:'线上',lat:null,lng:null,tags:['PS','电商设计'],company_name:'南屿电商',description:'提供产品原图和参考样式，要求完成基础精修、光影统一与版式优化。\n\n交付 JPG + 可编辑源文件，修改不超过 2 轮。',spots_total:1,spots_left:1,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-demo',created_at:Date.now()-2500000},
+  {id:'demo-3',type:'offline',category:'门店兼职',title:'咖啡店晚班兼职',price:25,price_unit:'小时',settlement:'每周一结算',pay_mode:'周结',time_text:'今晚 18:00-22:00',location:'广州·天河区·体育西',lat:23.1325,lng:113.3213,tags:['晚班','可长期'],company_name:'木森咖啡',description:'负责简单饮品辅助、收桌、打包与门店清洁。有服务业经验优先，没有经验可现场教学。',spots_total:2,spots_left:2,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-2',created_at:Date.now()-7200000},
+  {id:'demo-4',type:'online',category:'视频',title:'短视频粗剪｜3条',price:150,price_unit:'单',settlement:'验收后结算',pay_mode:'完工结',time_text:'今晚可做',location:'线上',lat:null,lng:null,tags:['剪映','短视频'],company_name:'栖木传媒',description:'素材已整理，每条 30-60 秒，按脚本完成粗剪、字幕和基础转场。无需包装特效。',spots_total:2,spots_left:2,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-3',created_at:Date.now()-5400000},
+  {id:'demo-5',type:'offline',category:'商超零工',title:'商场理货补货｜6小时',price:168,price_unit:'次',settlement:'次日中午前结算',pay_mode:'日结',time_text:'明天 10:00-16:00',location:'广州·越秀区·北京路',lat:23.1259,lng:113.2709,tags:['日结','体力活'],company_name:'禾仓零售服务',description:'协助商品上架、补货、纸箱整理。需要能连续站立工作，现场提供工作手套。',spots_total:4,spots_left:4,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-4',created_at:Date.now()-8600000},
+  {id:'demo-6',type:'online',category:'运营',title:'小红书笔记排版 8 篇',price:240,price_unit:'单',settlement:'交付通过后结算',pay_mode:'完工结',time_text:'2天内交付',location:'线上',lat:null,lng:null,tags:['小红书','排版','运营'],company_name:'白鲸工作室',description:'文案和图片素材由商家提供，负责封面统一、正文图片排版和基础发布格式整理。',spots_total:1,spots_left:1,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-5',created_at:Date.now()-9600000},
+  {id:'demo-7',type:'offline',category:'门店兼职',title:'周末书店整理员｜白班',price:22,price_unit:'小时',settlement:'每月 10 日统一结算',pay_mode:'月结',time_text:'周六日 10:00-18:00',location:'广州·天河区·珠江新城',lat:23.1192,lng:113.3267,tags:['周末','白班','可长期'],company_name:'拾页书店',description:'负责图书归位、简单陈列、顾客指引和闭店前整理。适合希望固定周末兼职的人群。',spots_total:3,spots_left:2,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-6',created_at:Date.now()-10800000},
+  {id:'demo-8',type:'offline',category:'仓储兼职',title:'仓库分拣白班｜8小时',price:208,price_unit:'次',settlement:'每周五结算',pay_mode:'周结',time_text:'工作日 09:00-18:00',location:'广州·白云区·嘉禾望岗',lat:23.2378,lng:113.2898,tags:['白班','周结','无需经验'],company_name:'迅仓供应链',description:'按区域完成轻小件分拣、扫码和装筐，现场培训后上岗。需要能连续站立工作。',spots_total:6,spots_left:5,status:'recruiting',review_status:'approved',risk_level:'low',verified:true,owner_id:'merchant-7',created_at:Date.now()-12600000}
 ];
 
 const FILTER_DEFAULTS = {workType:'全部',payMode:'全部',shift:'全部',distance:'全部',minPrice:'',maxPrice:'',priceUnit:'全部'};
@@ -43,16 +44,11 @@ const state = {
   advancedFilters:{...FILTER_DEFAULTS}, filterDraft:{...FILTER_DEFAULTS},
   selectedApplication:null, publishTab:'new', orderTab:'worker', adminTab:'verify',
   user:null, profile:null, tasks:[], applications:[], messages:[], reports:[],
-  inbox:[], inboxQuery:'', inboxFilter:'all', messageTab:'chats', chatUnread:0, noticeUnread:0, location:null, favorites:loadFavorites(), notifications:[], reviews:[], ownTasks:[], feedTotal:0, nextCursor:null, feedLoading:false, loading:true
+  inbox:[], inboxQuery:'', inboxFilter:'all', messageTab:'chats', chatUnread:0, noticeUnread:0, location:null, favorites:[], notifications:[], reviews:[], ownTasks:[], feedTotal:0, nextCursor:null, feedLoading:false, loading:true
 };
 
-
-function loadFavorites(){
-  try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]').filter(x=>typeof x==='string').slice(0,500).map(String)}catch(_e){return []}
-}
-function saveFavorites(){localStorage.setItem(FAV_KEY,JSON.stringify(state.favorites||[]))}
 function isFavorite(id){return (state.favorites||[]).includes(String(id))}
-async function toggleFavorite(event,id){event?.stopPropagation?.();try{const added=await H.services.favorite.toggle(String(id));toast(added?'已收藏，稍后可以再看':'已取消收藏');if(state.route==='favorites')await favoritesPage();else if(state.route==='home')refreshHomeResults();else render();}catch(e){toast(H.errorText(e));}}
+async function toggleFavorite(event,id){event?.stopPropagation?.();if(!requireLogin(()=>toggleFavorite(null,id)))return;try{const added=await H.services.favorite.toggle(String(id));toast(added?'已收藏，手机和电脑会同步':'已取消收藏');if(state.route==='favorites')await favoritesPage();else if(state.route==='home')refreshHomeResults();else render();}catch(e){toast(H.errorText(e));}}
 
 function makeDb(){return {tasks:seedTasks,applications:[],users:[],messages:[],reports:[],verificationRequests:[],notifications:[],reviews:[],audit_logs:[],favoritesByUser:{}}}
 function localDb(){
@@ -78,7 +74,8 @@ function normalizeDb(db){
   db.tasks=current.length?current:seedTasks.map(enrichLegacyTask); db.applications=db.applications||[]; db.users=(db.users||[]).map(enrichUser);
   db.messages=db.messages||[]; db.reports=db.reports||[]; db.verificationRequests=db.verificationRequests||[]; db.notifications??=[];db.reviews??=[];db.audit_logs??=[];db.favoritesByUser??={};return db;
 }
-function enrichLegacyTask(t){return {...H.task(t),city:t.city||'广州',category:t.category||((t.tags||[])[0]||'兼职'),review_status:t.review_status||'approved',risk_level:t.risk_level||'low',lat:t.lat??null,lng:t.lng??null}}
+function normalizeTaskStatus(t){if(['draft','pending_review','recruiting','full','ended','taken_down'].includes(t.status))return t.status;if((t.review_status||'approved')==='pending')return 'pending_review';if(t.status==='open')return Number(t.spots_left)>0?'recruiting':'full';if(t.status==='closed')return Number(t.spots_left)>0?'ended':'full';return 'ended';}
+function enrichLegacyTask(t){return {...H.task(t),status:normalizeTaskStatus(t),city:t.city||'广州',category:t.category||((t.tags||[])[0]||'兼职'),review_status:t.review_status||'approved',risk_level:t.risk_level||'low',lat:t.lat??null,lng:t.lng??null}}
 function enrichUser(u){return {...u,verification_status:u.verification_status||(u.verified?'verified':'unverified'),company_name:u.company_name||'',credit_code:u.credit_code||'',license_file_name:u.license_file_name||''}}
 function saveLocal(db){localStorage.setItem(LS_KEY,JSON.stringify(normalizeDb(db)))}
 function uid(prefix='id'){return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`}
@@ -86,8 +83,10 @@ function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt
 function priceLabel(t){const value=Number(t.price_fen??Math.round(Number(t.price)*100))/100;return `¥${value.toLocaleString('zh-CN',{maximumFractionDigits:2})}${t.price_unit==='小时'?'/小时':''}`;}
 
 function typeLabel(t){return t.type==='online'?'线上':'线下'}
-function statusLabel(s){return ({applied:'待商家确认',accepted:'已确认',completed:'已完成',rejected:'未通过',cancelled:'已取消'})[s]||s}
-function statusClass(s){return s==='accepted'||s==='completed'?'ok':s==='rejected'||s==='cancelled'?'bad':'wait'}
+function statusLabel(s){return ({applied:'已报名',viewed:'商家已查看',communicating:'沟通中',accepted:'已录用',completed:'已完成',rejected:'未录用',cancelled:'已取消'})[s]||s}
+function statusClass(s){return ['communicating','accepted','completed'].includes(s)?'ok':['rejected','cancelled'].includes(s)?'bad':'wait'}
+function taskStatusLabel(s){return ({draft:'草稿',pending_review:'审核中',recruiting:'招聘中',full:'已招满',ended:'已结束',taken_down:'已下架'})[s]||s}
+function taskStatusClass(s){return s==='recruiting'?'ok':['ended','taken_down'].includes(s)?'bad':'wait'}
 function reviewLabel(s){return ({approved:'审核通过',pending:'待平台审核',rejected:'审核未通过'})[s]||'待审核'}
 function reviewClass(s){return s==='approved'?'ok':s==='rejected'?'bad':'wait'}
 function verificationLabel(s){return ({verified:'商家已认证',pending:'认证审核中',rejected:'认证未通过',unverified:'未认证'})[s]||'未认证'}
@@ -97,9 +96,8 @@ function getMerchantId(a){return a.merchant_id}
 function getTask(a){
   if(!a)return null;
   if(a.tasks)return a.tasks;
-  const found=state.tasks.find(t=>String(t.id)===String(a.task_id));
+  const found=[...state.tasks,...state.ownTasks].find(t=>String(t.id)===String(a.task_id));
   if(found)return found;
-  if(!CLOUD_ENABLED)return localDb().tasks.find(t=>String(t.id)===String(a.task_id));
   return null;
 }
 function isOwner(t){return Boolean(state.user&&String(t.owner_id)===String(state.user.id))}
@@ -108,10 +106,10 @@ function merchantVerified(){return state.profile?.verification_status==='verifie
 async function init(){
  try{
   await ensureCloudClient();
+  const restored=await H.services.auth.current();
+  if(restored){state.user=restored;if(CLOUD_ENABLED)await hydrateUser(restored);else state.profile=enrichUser(restored);}
   if(CLOUD_ENABLED){
-   const {data,error}=await sb.auth.getSession();if(error)throw error;
-   if(data.session?.user){await hydrateUser(data.session.user);await H.services.favorite.merge();}
-   sb.auth.onAuthStateChange((event,session)=>{
+   H.services.auth.onChange((event,session)=>{
     if(event==='INITIAL_SESSION')return;
     const sequence=H.authEventSequence=(H.authEventSequence||0)+1;
     // Apply identity changes immediately; database reads run outside the Auth callback.
@@ -120,8 +118,8 @@ async function init(){
      const current=()=>sequence===H.authEventSequence&&H.isCurrentSession(identity);
      if(!current())return;
      try{
-      if(session?.user){await hydrateUser(session.user);if(!current())return;await H.services.favorite.merge();}
-      else{state.profile=null;state.favorites=loadFavorites();}
+      if(session?.user){await hydrateUser(session.user);}
+      else{state.profile=null;state.favorites=[];}
       if(!current())return;
       await loadData();if(!current())return;
       H.services.message.subscribe();render();if(session)runAfterAuth();
@@ -129,7 +127,6 @@ async function init(){
     },0);
    });
   }
-  else{const saved=localDb().users.find(u=>u.active);if(saved){state.user=saved;state.profile=enrichUser(saved);await H.services.favorite.merge();}}
   await loadData();state.loading=false;H.services.message.subscribe();render();
  }catch(e){state.loading=false;app.innerHTML=`<section class="section"><div class="empty-box"><b>暂时无法连接服务</b><p>${esc(H.errorText(e))}</p><button class="primary" onclick="location.reload()">重新连接</button></div></section>`;}
 }
@@ -144,26 +141,10 @@ async function loadData(){
   if(!current())return false;
   if(!['messages','chat','notifications'].includes(state.route))await reloadFeed(false);
   if(!current())return false;
-  if(state.user){
-   const id=state.user.id;
-   const [a,r,n,rv,own,unread]=await Promise.all([
-    sb.from('applications').select('*,tasks(*)').order('created_at',{ascending:false}),
-    sb.from('reports').select('*').eq('reporter_id',id).order('created_at',{ascending:false}),
-    sb.from('notifications').select('*').eq('user_id',id).order('created_at',{ascending:false}).limit(100),
-    sb.from('reviews').select('*').eq('reviewer_id',id),
-    sb.from('tasks').select('*').eq('owner_id',id).order('created_at',{ascending:false}),
-    sb.from('notifications').select('id',{count:'exact',head:true}).eq('user_id',id).is('read_at',null)
-   ]);
-   if(!current())return false;
-   const snapshot={applications:H.unwrap(a)||[],reports:H.unwrap(r)||[],notifications:H.unwrap(n)||[],reviews:H.unwrap(rv)||[],ownTasks:(H.unwrap(own)||[]).map(H.task),unreadCount:unread.count||0};H.unwrap(unread);
-   // Do not download every conversation on unrelated pages. The active chat
-   // loads its own history through inbox.conversation.
-   snapshot.favorites=await H.services.favorite.list();
-   if(!current())return false;
-   Object.assign(state,snapshot);
-  }else{state.applications=[];state.reports=[];state.messages=[];state.notifications=[];state.reviews=[];state.ownTasks=[];state.unreadCount=0;}
+  if(state.user){const snapshot=await H.services.account.load();if(!current())return false;Object.assign(state,snapshot);}
+  else Object.assign(state,H.services.account.empty());
  }else{
-  const db=localDb();state.tasks=db.tasks.map(H.task);state.ownTasks=state.tasks.filter(t=>t.owner_id===state.user?.id);state.applications=db.applications.filter(a=>state.user&&[a.worker_id,a.merchant_id].includes(state.user.id));const ids=new Set(state.applications.map(a=>a.id));state.messages=db.messages.filter(m=>ids.has(m.application_id));state.reports=db.reports.filter(r=>r.reporter_id===state.user?.id);state.notifications=db.notifications.filter(n=>n.user_id===state.user?.id);state.reviews=db.reviews.filter(r=>r.reviewer_id===state.user?.id);state.unreadCount=state.notifications.filter(n=>!n.read_at).length;state.favorites=await H.services.favorite.list();if(state.user){const fresh=db.users.find(u=>u.id===state.user.id);if(fresh){state.user=fresh;state.profile=enrichUser(fresh);}}
+  state.tasks=await H.services.task.localFeed();if(state.user){const snapshot=await H.services.account.load();if(!current())return false;Object.assign(state,snapshot);if(snapshot.user){state.user=snapshot.user;state.profile=snapshot.user;}}else Object.assign(state,H.services.account.empty());
  }
  if(!current())return false;
  await H.services.inbox.load();
@@ -197,7 +178,7 @@ function updateHeader(){
   document.querySelector('.app-shell').classList.toggle('inbox-shell',['messages','chat','notifications'].includes(state.route));
   const total=(state.chatUnread||0)+(state.noticeUnread||0),badge=document.getElementById('messageNavBadge');if(badge){badge.hidden=!total;badge.textContent=total>99?'99+':total;}const nav=document.querySelector('[data-route="messages"]');if(nav)nav.setAttribute('aria-label',`消息${total?`，${total}条未读`:''}`);
 
-  const bell=document.getElementById('notificationBtn');if(bell){bell.innerHTML=`♧${total?`<span class="unread-badge">${total>99?'99+':total}</span>`:''}`;bell.setAttribute('aria-label',`通知中心，${state.noticeUnread||0}条未读`);}const hint=document.getElementById('modeHint');const btn=document.getElementById('accountBtn');const city=document.getElementById('cityBtn');
+  const hint=document.getElementById('modeHint');const btn=document.getElementById('accountBtn');const city=document.getElementById('cityBtn');
   hint.textContent=CLOUD_ENABLED?'云端账户 · 手机与电脑共用数据':'本地演示 · 仅当前浏览器保存，不跨设备同步';
   btn.textContent=(state.profile?.name||'游客').slice(0,1);
   city.textContent=`${state.profile?.city||CFG.CITY||'广州'} ▾`;
@@ -226,7 +207,7 @@ function activeAdvancedFilterCount(){
   return Object.entries(state.advancedFilters||{}).filter(([k,v])=>v!==FILTER_DEFAULTS[k]).length;
 }
 function filteredTasks(){
-  if(CLOUD_ENABLED)return state.tasks;let list=state.tasks.filter(t=>t.status==='open'&&t.review_status==='approved'&&t.spots_left>0);
+  if(CLOUD_ENABLED)return state.tasks;let list=state.tasks.filter(t=>t.status==='recruiting'&&t.review_status==='approved'&&t.spots_left>0);
   if(state.filter==='线下')list=list.filter(t=>t.type==='offline');
   else if(state.filter==='线上')list=list.filter(t=>t.type==='online');
   else if(state.filter!=='全部')list=list.filter(t=>(t.tags||[]).includes(state.filter)||t.pay_mode===state.filter||t.category===state.filter);
@@ -267,7 +248,7 @@ function taskCard(t){
 
 function matchCards(){
   if(!state.profile?.skills?.length)return '';
-  const top=state.tasks.filter(t=>t.status==='open'&&t.review_status==='approved'&&t.spots_left>0).sort((a,b)=>matchScore(b)-matchScore(a)).slice(0,3);
+  const top=state.tasks.filter(t=>t.status==='recruiting'&&t.review_status==='approved'&&t.spots_left>0).sort((a,b)=>matchScore(b)-matchScore(a)).slice(0,3);
   if(!top.length)return '';
   return `<section class="match-section"><div class="match-section-head"><div class="match-title-wrap"><span class="match-title-icon">✦</span><div><div class="match-title-line"><h3>为你匹配</h3><span class="match-ai-pill">规则推荐</span></div><p>根据技能、距离和发布时间推荐</p></div></div><span class="match-skill-hint">${esc(state.profile.skills.slice(0,2).join(' / '))}</span></div><div class="match-strip">${top.map(t=>`<div class="match-card" onclick="openTask('${esc(t.id)}')"><div class="match-head"><b>${esc(t.title)}</b><span class="match-score">${matchScore(t)} 分</span></div><div class="muted">${esc(distanceLabel(t))} · ${esc(t.time_text)}</div><div class="match-price">${priceLabel(t)}</div></div>`).join('')}</div></section>`;
 }
@@ -317,7 +298,7 @@ function submitNavSearch(event){event?.preventDefault();clearTimeout(H.searchTim
 function clearSearch(){clearTimeout(H.searchTimer);state.query='';const input=document.getElementById('homeSearch');input.value='';document.getElementById('navSearchClear').hidden=true;if(state.route==='home'){if(CLOUD_ENABLED)reloadFeed();else refreshHomeResults();}input.focus();}
 function setSort(v){if(v==='distance'&&!state.location){showLocationPicker();return;}state.sort=v;if(CLOUD_ENABLED)reloadFeed();else refreshHomeResults();}
 
-async function favoritesPage(){const session=H.captureSession(),navigation=uxNavigation,request=H.favoritePageSequence=(H.favoritePageSequence||0)+1;const current=()=>H.isCurrentSession(session)&&state.route==='favorites'&&navigation===uxNavigation&&request===H.favoritePageSequence;app.innerHTML='<section class="section"><div class="empty">正在读取收藏…</div></section>';try{const list=await H.services.favorite.tasks();if(!current())return;H.favoriteTasks=list;app.innerHTML=`<div class="detail-head"><button class="back" onclick="go('profile')">← 返回</button><span class="page-kicker">我的收藏</span></div><section class="section"><div class="saved-head"><div><h2>稍后再看</h2><p>${list.length} 个可报名的已收藏兼职</p></div><span class="saved-icon">♡</span></div><div class="task-list">${list.length?list.map(taskCard).join(''):'<div class="empty-box"><b>还没有可报名的收藏</b><p class="muted">已关闭的任务暂不展示。</p><button class="primary" onclick="go(&quot;home&quot;)">去找活</button></div>'}</div></section>`;}catch(e){if(!current())return;app.innerHTML=`<section class="section"><p>${esc(H.errorText(e))}</p><button class="secondary" onclick="favoritesPage()">重试</button></section>`;}}
+async function favoritesPage(){if(!state.user){app.innerHTML='<section class="section"><div class="empty-box"><b>登录后查看收藏</b><p>收藏会跟随账户在手机和电脑同步。</p><button class="primary accent" onclick="showAuth(()=>go(\'favorites\'))">登录 / 注册</button></div></section>';return;}const session=H.captureSession(),navigation=uxNavigation,request=H.favoritePageSequence=(H.favoritePageSequence||0)+1;const current=()=>H.isCurrentSession(session)&&state.route==='favorites'&&navigation===uxNavigation&&request===H.favoritePageSequence;app.innerHTML='<section class="section"><div class="empty">正在读取收藏…</div></section>';try{const list=await H.services.favorite.tasks();if(!current())return;H.favoriteTasks=list;app.innerHTML=`<div class="detail-head"><button class="back" onclick="go('profile')">← 返回</button><span class="page-kicker">我的收藏</span></div><section class="section"><div class="saved-head"><div><h2>稍后再看</h2><p>${list.length} 个可报名的已收藏兼职</p></div><span class="saved-icon">♡</span></div><div class="task-list">${list.length?list.map(taskCard).join(''):'<div class="empty-box"><b>还没有可报名的收藏</b><p class="muted">已结束的任务暂不展示。</p><button class="primary" onclick="go(&quot;home&quot;)">去找活</button></div>'}</div></section>`;}catch(e){if(!current())return;app.innerHTML=`<section class="section"><p>${esc(H.errorText(e))}</p><button class="secondary" onclick="favoritesPage()">重试</button></section>`;}}
 
 function detail(t){
   if(!t){app.innerHTML=`<section class="section"><div class="empty-box" role="status"><b>${state.taskError?'任务暂不可查看':'正在读取任务…'}</b>${state.taskError?`<p>${esc(state.taskError)}</p><div class="btn-row"><button class="secondary" onclick="openTask(state.routeTaskId)">重新加载</button><button class="primary" onclick="go('home')">去找其他活</button></div>`:''}</div></section>`;return;}
@@ -328,7 +309,7 @@ function detail(t){
   <section class="detail-card"><h3>这单要做什么</h3><p class="desc">${esc(t.description)}</p></section>
   <section class="detail-card"><div class="company"><div class="avatar">${esc((t.company_name||'商').slice(0,1))}</div><div><button class="text-btn" onclick="openPublicProfile('${esc(t.owner_id)}','merchant')"><b>${esc(t.company_name||'商家')} ›</b></button><div class="${t.verified?'company-trust':'company-review'}">${t.verified?'✓ 商家实名认证已通过':'! 商家认证状态待核验'}</div></div></div></section>
   <section class="detail-card safety-card"><h3>🛡 活搭安全提醒</h3><ul class="safety-list"><li>任何押金、保证金、培训费、入职费都不要支付。</li><li>遇到刷单、代收转账、借银行卡等要求，请立即举报。</li><li>实际工资、地点或工作内容与页面明显不符时保留聊天证据。</li></ul></section>
-  <section class="section"><button class="secondary" onclick="toggleFavorite(event,'${esc(t.id)}')">${isFavorite(t.id)?'♥ 已收藏':'♡ 收藏任务'}</button></section><section class="section sticky-cta"><button class="primary accent" ${applied||isOwner(t)||t.review_status!=='approved'||t.status!=='open'||t.spots_left<1?'disabled':''} onclick="applyTask('${esc(t.id)}')">${isOwner(t)?'这是你发布的任务':t.review_status!=='approved'?'等待平台审核':applied?statusLabel(applied.status):`立即${t.type==='online'?'接单':'报名'}`}</button></section>`;
+  <section class="section"><button class="secondary" onclick="toggleFavorite(event,'${esc(t.id)}')">${state.user?(isFavorite(t.id)?'♥ 已收藏':'♡ 收藏任务'):'登录后收藏'}</button></section><section class="section sticky-cta"><button class="primary accent" ${applied||isOwner(t)||t.status!=='recruiting'||t.spots_left<1?'disabled':''} onclick="applyTask('${esc(t.id)}')">${isOwner(t)?'这是你发布的任务':t.status!=='recruiting'?taskStatusLabel(t.status):applied?statusLabel(applied.status):`立即${t.type==='online'?'接单':'报名'}`}</button></section>`;
   H.layoutDetail?.(t,applied);
 }
 
@@ -353,24 +334,28 @@ function publishForm(){
   <div class="field"><label>地点 / 线上</label><input id="pLocation" placeholder="广州·海珠区 / 线上"></div>
   <div class="inline"><div class="field"><label>开始时间（可选）</label><input id="pStart" type="datetime-local"></div><div class="field"><label>结束 / 截止时间（可选）</label><input id="pEnd" type="datetime-local"></div></div><div class="field"><label>工作时段</label><select id="pShift"><option value="">灵活</option><option>白班</option><option>晚班</option><option>周末</option></select></div><div class="field"><label>工作城市（线下必填）</label><input id="pCity" value="${esc(state.profile?.city||CFG.CITY||'广州')}"></div><div class="inline"><div class="field"><label>工作地点纬度 WGS84</label><input id="pLat" type="number" step="any" placeholder="23.1291"></div><div class="field"><label>经度 WGS84</label><input id="pLng" type="number" step="any" placeholder="113.2644"></div></div><p class="muted">线下任务请填写实际工作地点坐标，GCJ-02 地址需转换后使用。</p><div class="field"><label>技能 / 特征标签</label><input id="pTags" placeholder="PS, 电商设计 / 日结, 无需经验"></div>
   <div class="field"><label>工作内容与交付标准</label><textarea id="pDesc" placeholder="做什么、做到什么程度、是否自带设备、修改次数等"></textarea></div>
-  <button class="primary ${ready?'accent':''}" onclick="${ready?'createTask()':'showVerification(true)'}">${ready?'提交平台审核':'先完成商家认证'}</button><p class="form-note">任务审核通过后才进入公开任务流。禁止押金、培训费、刷单和代收代付。</p></section>`;
+  <div class="btn-row"><button class="secondary" onclick="createTask(false)">保存草稿</button><button class="primary ${ready?'accent':''}" onclick="${ready?'createTask()':'showVerification(true)'}">${ready?'提交平台审核':'先完成商家认证'}</button></div><p class="form-note">草稿只有你自己可见；提交并审核通过后才进入公开任务流。禁止押金、培训费、刷单和代收代付。</p></section>`;
 }
 function publishedList(posts){
   if(!state.user)return `<section class="section"><div class="empty-box"><b>登录后管理你发布的活</b><button class="primary" onclick="showAuth()">登录 / 注册</button></div></section>`;
   const related=state.applications.filter(a=>String(getMerchantId(a))===String(state.user.id));
   return `<section class="section"><div class="section-title"><div><h3>我发布的</h3><p>审核和报名状态都在这里</p></div><span>${posts.length} 单</span></div>${posts.length?posts.map(t=>{
-    const apps=related.filter(a=>String(a.task_id)===String(t.id));return `<div class="merchant-card"><div class="merchant-head"><div><b>${esc(t.title)}</b><div class="muted">${priceLabel(t)} · ${apps.length} 人报名</div></div><span class="status ${reviewClass(t.review_status)}">${reviewLabel(t.review_status)}</span></div><button class="text-btn" onclick="editTaskDetails('${esc(t.id)}')">修改任务信息 ›</button><div class="applicant-list">${apps.length?apps.map(a=>`<div class="applicant"><div><span class="mini-avatar">人</span><div><button class="text-btn" onclick="openPublicProfile('${esc(a.worker_id)}','worker')">查看求职者档案 ›</button><small> · ${statusLabel(a.status)}</small></div></div>${a.status==='applied'?`<div class="mini-actions"><button onclick="merchantDecision('${a.id}','rejected')">拒绝</button><button class="accept" onclick="merchantDecision('${a.id}','accepted')">确认</button></div>`:`<div class="mini-actions">${a.status==='accepted'?`<button class="accept" onclick="openChat('${a.id}')">聊天</button>`:''}<span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div>`}</div>`).join(''):'<div class="muted pad">暂时还没有人报名</div>'}</div></div>`
+    const apps=related.filter(a=>String(a.task_id)===String(t.id));
+    const taskActions=[t.status==='draft'?`<button class="text-btn" onclick="manageTaskStatus('${esc(t.id)}','pending_review')">提交审核 ›</button>`:'',['recruiting','full'].includes(t.status)?`<button class="text-btn" onclick="manageTaskStatus('${esc(t.id)}','ended')">结束招聘 ›</button>`:'',['draft','pending_review','recruiting','full'].includes(t.status)?`<button class="text-btn danger" onclick="manageTaskStatus('${esc(t.id)}','taken_down')">下架任务 ›</button>`:''].join('');
+    return `<div class="merchant-card"><div class="merchant-head"><div><b>${esc(t.title)}</b><div class="muted">${priceLabel(t)} · ${apps.length} 人报名</div></div><span class="status ${taskStatusClass(t.status)}">${taskStatusLabel(t.status)}</span></div><div class="btn-row"><button class="text-btn" onclick="editTaskDetails('${esc(t.id)}')">修改任务信息 ›</button>${taskActions}</div><div class="applicant-list">${apps.length?apps.map(a=>`<div class="applicant"><div><span class="mini-avatar">人</span><div><button class="text-btn" onclick="openPublicProfile('${esc(a.worker_id)}','worker')">查看求职者档案 ›</button><small> · ${statusLabel(a.status)}</small></div></div>${['applied','viewed','communicating'].includes(a.status)?`<div class="mini-actions">${a.status==='applied'?`<button onclick="merchantDecision('${a.id}','viewed')">标记已查看</button>`:''}${['applied','viewed'].includes(a.status)?`<button class="accept" onclick="merchantDecision('${a.id}','communicating')">开始沟通</button>`:''}${a.status==='communicating'?`<button class="accept" onclick="openChat('${a.id}')">聊天</button>`:''}<button onclick="merchantDecision('${a.id}','rejected')">不录用</button><button class="accept" onclick="merchantDecision('${a.id}','accepted')">录用</button></div>`:`<div class="mini-actions">${['accepted','completed'].includes(a.status)?`<button class="accept" onclick="openChat('${a.id}')">聊天</button>`:''}<span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div>`}</div>`).join(''):'<div class="muted pad">暂时还没有人报名</div>'}</div></div>`;
   }).join(''):'<div class="empty">还没有发布任务</div>'}</section>`;
 }
-async function createTask(){if(uxPublishing||!requireLogin(()=>createTask()))return;uxPublishing=true;saveVisibleDrafts();const session=H.captureSession(),key=draftKey('publish');app.querySelectorAll('[onclick="createTask()"]').forEach(b=>{b.disabled=true;b.textContent='正在提交…';});let created=false;try{const v=id=>document.getElementById(id)?.value.trim(),price=Number(v('pPrice')),spots=Number(v('pSpots')),online=v('pType')==='online';if(!v('pTitle')||!v('pTime')||!v('pDesc')||!v('pLocation')||!Number.isFinite(price)||price<=0||!Number.isInteger(spots)||spots<1||spots>1000)throw new Error('请完整填写任务信息，人数为 1–1000 的整数');if(!/^\d+(\.\d{1,2})?$/.test(v('pPrice')))throw new Error('金额最多保留两位小数');if(!online&&(!v('pLat')||!v('pLng')||!v('pCity')||Number(v('pLat')) < -90||Number(v('pLat'))>90||Number(v('pLng')) < -180||Number(v('pLng'))>180))throw new Error('请填写实际工作地点的城市和有效 WGS84 坐标');const start=v('pStart')?new Date(v('pStart')).toISOString():null,end=v('pEnd')?new Date(v('pEnd')).toISOString():null;if(start&&end&&end<=start)throw new Error('结束时间应晚于开始时间');const tags=(v('pTags')||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean).slice(0,8);await H.services.task.create({type:v('pType'),title:v('pTitle'),price_fen:Math.round(price*100),price,price_unit:v('pUnit'),pay_mode:v('pPay'),settlement:({日结:'完工当天结算',周结:'每周结算',月结:'每月结算',完工结:'验收后结算'})[v('pPay')],time_text:v('pTime'),location:online?'线上':v('pLocation'),city:v('pCity'),description:v('pDesc'),tags,category:tags[0]||'兼职',spots_total:spots,lat:online?null:Number(v('pLat')),lng:online?null:Number(v('pLng')),coordinate_system:online?null:'WGS84',start_at:start,end_at:end,schedule_type:start?'fixed':end?'deadline':'flexible',shift:v('pShift'),verified:true});created=true;writeDraft(key,null);const box=app.querySelector('[data-draft-key]');if(box?.dataset.draftKey===key)box.dataset.draftKey='';if(!H.isCurrentSession(session))return;if(state.route==='publish'){state.publishTab='mine';render();}await loadData();if(!H.isCurrentSession(session))return;if(state.route==='publish')render();toast('已提交平台审核');}catch(e){if(H.isCurrentSession(session))toast(created?'任务已提交，列表刷新失败，请到我发布的查看。':H.errorText(e));}finally{uxPublishing=false;app.querySelectorAll('[onclick="createTask()"]').forEach(b=>{b.disabled=false;b.textContent='提交平台审核';});}}
+async function createTask(submit=true){if(uxPublishing||!requireLogin(()=>createTask(submit)))return;uxPublishing=true;saveVisibleDrafts();const session=H.captureSession(),key=draftKey('publish');app.querySelectorAll('[onclick^="createTask("]').forEach(b=>{b.disabled=true;b.textContent=submit?'正在提交…':'正在保存…';});let created=false;try{const v=id=>document.getElementById(id)?.value.trim(),price=Number(v('pPrice')),spots=Number(v('pSpots')),online=v('pType')==='online';if(!v('pTitle')||!v('pTime')||!v('pDesc')||!v('pLocation')||!Number.isFinite(price)||price<=0||!Number.isInteger(spots)||spots<1||spots>1000)throw new Error('请完整填写任务信息，人数为 1–1000 的整数');if(!/^\d+(\.\d{1,2})?$/.test(v('pPrice')))throw new Error('金额最多保留两位小数');if(!online&&(!v('pLat')||!v('pLng')||!v('pCity')||Number(v('pLat')) < -90||Number(v('pLat'))>90||Number(v('pLng')) < -180||Number(v('pLng'))>180))throw new Error('请填写实际工作地点的城市和有效 WGS84 坐标');const start=v('pStart')?new Date(v('pStart')).toISOString():null,end=v('pEnd')?new Date(v('pEnd')).toISOString():null;if(start&&end&&end<=start)throw new Error('结束时间应晚于开始时间');const tags=(v('pTags')||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean).slice(0,8);await H.services.task.create({type:v('pType'),title:v('pTitle'),price_fen:Math.round(price*100),price,price_unit:v('pUnit'),pay_mode:v('pPay'),settlement:({日结:'完工当天结算',周结:'每周结算',月结:'每月结算',完工结:'验收后结算'})[v('pPay')],time_text:v('pTime'),location:online?'线上':v('pLocation'),city:v('pCity'),description:v('pDesc'),tags,category:tags[0]||'兼职',spots_total:spots,lat:online?null:Number(v('pLat')),lng:online?null:Number(v('pLng')),coordinate_system:online?null:'WGS84',start_at:start,end_at:end,schedule_type:start?'fixed':end?'deadline':'flexible',shift:v('pShift'),verified:true},{submit});created=true;writeDraft(key,null);const box=app.querySelector('[data-draft-key]');if(box?.dataset.draftKey===key)box.dataset.draftKey='';if(!H.isCurrentSession(session))return;if(state.route==='publish'){state.publishTab='mine';render();}await loadData();if(!H.isCurrentSession(session))return;if(state.route==='publish')render();toast(submit?'任务已提交平台审核':'草稿已保存');}catch(e){if(H.isCurrentSession(session))toast(created?(submit?'任务已提交平台审核，列表刷新失败，请到我发布的查看。':'草稿已保存，列表刷新失败，请到我发布的查看。'):H.errorText(e));}finally{uxPublishing=false;if(state.route==='publish')render();}}
+
+async function manageTaskStatus(taskId,status){try{await H.services.task.transition(taskId,status);await loadData();render();toast(({pending_review:'已提交平台审核',ended:'招聘已结束',taken_down:'任务已下架'})[status]||'任务状态已更新');}catch(e){toast(H.errorText(e));}}
 
 function orders(){
   const workerApps=state.user?state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)):[];
   const merchantApps=state.user?state.applications.filter(a=>String(getMerchantId(a))===String(state.user.id)):[];
   app.innerHTML=`<section class="section"><div class="seg"><button class="${state.orderTab==='worker'?'active':''}" onclick="setOrderTab('worker')">我的接单</button><button class="${state.orderTab==='merchant'?'active':''}" onclick="setOrderTab('merchant')">商家待确认 ${merchantApps.filter(x=>x.status==='applied').length||''}</button></div></section>${!state.user?`<section class="section"><div class="empty-box"><b>登录后查看报名、聊天和任务状态</b><button class="primary" onclick="showAuth()">登录 / 注册</button></div></section>`:state.orderTab==='worker'?workerOrders(workerApps):merchantOrders(merchantApps)}`;
 }
-function workerOrders(list){return `<section class="section">${list.length?list.map(a=>{const t=getTask(a);return `<div class="order-card"><div class="order-top"><div><b>${esc(t?.title||'任务')}</b><div class="muted">${t?priceLabel(t):''} · ${esc(t?.time_text||'')}</div></div><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div><div class="timeline"><span class="${['applied','accepted','completed'].includes(a.status)?'done':''}">报名</span><i></i><span class="${['accepted','completed'].includes(a.status)?'done':''}">商家确认</span><i></i><span class="${a.status==='completed'?'done':''}">完成</span></div>${a.status==='applied'?'<div class="btn-row"><button class="secondary" onclick="cancelApplication(\''+a.id+'\')">取消报名</button><button class="secondary" disabled>等待确认</button></div>':''}${a.status==='accepted'?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">联系商家</button><button class="primary accent" onclick="completeApplication('${a.id}')">标记已完成</button></div><button class="text-btn danger" onclick="cancelApplication('${a.id}')">撤回已确认报名</button>`:''}${a.status==='completed'?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">查看聊天</button><button class="secondary" onclick="showReview('${a.id}')">评价合作体验</button></div>`:''}</div>`}).join(''):'<div class="empty">还没有接单记录</div>'}</section>`}
-function merchantOrders(list){return `<section class="section">${list.length?list.map(a=>{const t=getTask(a);return `<div class="order-card"><div class="order-top"><div><b>${esc(t?.title||'任务')}</b><div class="muted">收到报名 · ${esc(t?.time_text||'')} <button class="text-btn" onclick="openPublicProfile('${esc(a.worker_id)}','worker')">查看求职者档案 ›</button></div></div><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div>${a.status==='applied'?`<div class="btn-row"><button class="secondary" onclick="merchantDecision('${a.id}','rejected')">拒绝</button><button class="primary" onclick="merchantDecision('${a.id}','accepted')">确认用人</button></div>`:''}${['accepted','completed'].includes(a.status)?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">站内聊天</button>${a.status==='completed'?`<button class="secondary" onclick="showReview('${a.id}')">评价合作体验</button>`:`<button class="secondary" onclick="completeApplication('${a.id}')">标记已完成</button>`}</div>`:''}</div>`}).join(''):'<div class="empty">暂无需要处理的报名</div>'}</section>`}
+function workerOrders(list){return `<section class="section">${list.length?list.map(a=>{const t=getTask(a),active=['applied','viewed','communicating'].includes(a.status);return `<div class="order-card"><div class="order-top"><div><b>${esc(t?.title||'任务')}</b><div class="muted">${t?priceLabel(t):''} · ${esc(t?.time_text||'')}</div></div><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div><div class="timeline"><span class="done">报名</span><i></i><span class="${['viewed','communicating','accepted','completed'].includes(a.status)?'done':''}">查看</span><i></i><span class="${['communicating','accepted','completed'].includes(a.status)?'done':''}">沟通</span><i></i><span class="${['accepted','completed'].includes(a.status)?'done':''}">录用</span><i></i><span class="${a.status==='completed'?'done':''}">完成</span></div>${active?`<div class="btn-row">${a.status==='communicating'?`<button class="secondary" onclick="openChat('${a.id}')">联系商家</button>`:'<button class="secondary" disabled>等待商家推进</button>'}<button class="secondary" onclick="cancelApplication('${a.id}')">取消报名</button></div>`:''}${a.status==='accepted'?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">联系商家</button><button class="primary accent" onclick="completeApplication('${a.id}')">标记已完成</button></div><button class="text-btn danger" onclick="cancelApplication('${a.id}')">取消已录用报名</button>`:''}${a.status==='completed'?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">查看聊天</button><button class="secondary" onclick="showReview('${a.id}')">评价合作体验</button></div>`:''}</div>`}).join(''):'<div class="empty">还没有接单记录</div>'}</section>`}
+function merchantOrders(list){return `<section class="section">${list.length?list.map(a=>{const t=getTask(a);return `<div class="order-card"><div class="order-top"><div><b>${esc(t?.title||'任务')}</b><div class="muted">收到报名 · ${esc(t?.time_text||'')} <button class="text-btn" onclick="openPublicProfile('${esc(a.worker_id)}','worker')">查看求职者档案 ›</button></div></div><span class="status ${statusClass(a.status)}">${statusLabel(a.status)}</span></div>${a.status==='applied'?`<div class="btn-row"><button class="secondary" onclick="merchantDecision('${a.id}','viewed')">标记已查看</button><button class="secondary" onclick="merchantDecision('${a.id}','rejected')">不录用</button></div>`:''}${a.status==='viewed'?`<div class="btn-row"><button class="secondary" onclick="merchantDecision('${a.id}','rejected')">不录用</button><button class="primary" onclick="merchantDecision('${a.id}','communicating')">开始沟通</button></div>`:''}${a.status==='communicating'?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">站内聊天</button><button class="secondary" onclick="merchantDecision('${a.id}','rejected')">不录用</button><button class="primary" onclick="merchantDecision('${a.id}','accepted')">录用</button></div>`:''}${['accepted','completed'].includes(a.status)?`<div class="btn-row"><button class="secondary" onclick="openChat('${a.id}')">站内聊天</button>${a.status==='completed'?`<button class="secondary" onclick="showReview('${a.id}')">评价合作体验</button>`:`<button class="secondary" onclick="completeApplication('${a.id}')">标记已完成</button>`}</div>`:''}</div>`}).join(''):'<div class="empty">暂无需要处理的报名</div>'}</section>`}
 async function merchantDecision(appId,status){try{await H.services.application.transition(appId,status);await loadData();render();toast('状态已更新');}catch(e){toast(H.errorText(e));}}
 
 async function completeApplication(appId){try{await H.services.application.transition(appId,'completed');await loadData();render();toast('状态已更新');}catch(e){toast(H.errorText(e));}}
@@ -383,7 +368,7 @@ async function openChat(appId){
  const request=H.chatSequence=(H.chatSequence||0)+1;
  state.route='chat';state.routeChatId=appId;state.selectedApplication=null;syncLocation();updateHeader();app.innerHTML='<div class="inbox-empty">正在打开会话…</div>';
  try{const data=await H.services.inbox.conversation(appId);if(request!==H.chatSequence||navigation!==uxNavigation||!H.isCurrentSession(session)||state.route!=='chat')return;
-  if(!['accepted','completed'].includes(data.application.status)&&!data.messages.some(m=>m.message_type!=='system'))throw new Error('商家确认后才能聊天');
+  if(!['communicating','accepted','completed'].includes(data.application.status)&&!data.messages.some(m=>m.message_type!=='system'))throw new Error('商家发起沟通后才能聊天');
   H.applyConversationPage(data,{reset:true});
   const peerId=data.application.worker_id===state.user.id?data.application.merchant_id:data.application.worker_id;
   const cached=state.inbox.find(c=>c.application_id===appId);const peer=cached?null:await H.services.merchant.publicProfile(peerId,data.application.worker_id===state.user.id?'merchant':'worker');
@@ -395,7 +380,7 @@ async function openChat(appId){
 }
 function scrollChatToLatest(){requestAnimationFrame(()=>document.getElementById('chatEnd')?.scrollIntoView({block:'end'}));}
 function chat(){
- const a=state.selectedApplication;if(!a){go('messages');return;}const t=getTask(a),canSend=['accepted','completed'].includes(a.status),msgs=state.messages.filter(m=>m.application_id===a.id);
+ const a=state.selectedApplication;if(!a){go('messages');return;}const t=getTask(a),canSend=['communicating','accepted'].includes(a.status),msgs=state.messages.filter(m=>m.application_id===a.id);
  app.innerHTML=`<section class="chat-shell direct-chat"><div class="chat-head"><button class="back" onclick="go('messages')">← 消息</button><div class="chat-peer"><h3>${esc(state.chatPeer||t?.company_name||'工作搭子')}</h3><div class="muted">${esc(t?.title||'任务沟通')}</div></div><button class="text-btn" onclick="go('orders')">接单记录</button></div><div class="chat-safe">请在站内确认工作安排，不要支付押金或帮助他人转账。</div><div class="chat-list">${msgs.length?msgs.map(m=>m.message_type==='system'?`<div class="chat-system">${esc(m.content)}</div>`:`<div class="msg-row ${m.sender_id===state.user.id?'mine':''}"><div class="msg">${esc(m.content)}<div class="msg-time">${formatTime(m.created_at)} ${m.sender_id===state.user.id?(m.read_at?'已读':'未读'):''}</div></div></div>`).join(''):'<div class="empty">先确认一下到场时间或交付要求吧。</div>'}<div id="chatEnd"></div></div>${canSend?'<div class="chat-input"><input id="chatText" maxlength="2000" aria-label="聊天内容" placeholder="发消息，直接聊聊这单活" onkeydown="if(event.key===\'Enter\'&&!event.isComposing)sendMessage()"><button onclick="sendMessage()">发送</button></div>':'<p class="chat-closed">本次合作已结束，可以查看历史聊天。</p>'}</section>`;
  restoreDraft(app.querySelector('.chat-input'),'chat',a.id);
  H.renderHistoryControl();
@@ -415,7 +400,7 @@ async function sendMessage(){
 
 function profile(){
   if(!state.user){app.innerHTML=`<section class="welcome-card"><div class="welcome-logo">H</div><h2>登录活搭</h2><p>保存接单记录、在线聊天、发布一单活，并查看每一步状态。</p><button class="primary accent" onclick="showAuth()">登录 / 注册</button><button class="ghost" onclick="demoLogin('worker')">一键体验求职者</button><button class="ghost" onclick="demoLogin('merchant')">一键体验已认证商家</button></section>`;return}
-  const done=state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)&&a.status==='completed').length;const doing=state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)&&['applied','accepted'].includes(a.status)).length;const v=state.profile?.verification_status||'unverified';
+  const done=state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)&&a.status==='completed').length;const doing=state.applications.filter(a=>String(getWorkerId(a))===String(state.user.id)&&['applied','viewed','communicating','accepted'].includes(a.status)).length;const v=state.profile?.verification_status||'unverified';
   app.innerHTML=`<section class="profile-head"><div class="profile-row"><div><div class="profile-name">${esc(state.profile?.name||'用户')}</div><div class="profile-sub">${esc(state.profile?.city||CFG.CITY||'广州')} · ${esc((state.profile?.skills||[]).join(' / ')||'完善技能后匹配更准')}</div></div><span class="cloud-pill">${CLOUD_ENABLED?'云端':'本地'}账户</span></div><div class="stats"><div class="stat"><b>${doing}</b>进行中</div><div class="stat"><b>${done}</b>已完成</div><div class="stat"><b>${state.reports.filter(r=>r.status==='open').length}</b>举报处理中</div></div></section>
   <section class="menu"><button class="menu-item" onclick="go('orders')"><span>接单与报名记录</span><span class="menu-right">进度、确认、完成 ›</span></button><button class="menu-item" onclick="go('messages')"><span>我的消息</span><span class="menu-right">${(state.chatUnread||0)+(state.noticeUnread||0)} 条未读 ›</span></button><button class="menu-item" onclick="openPublicProfile('${esc(state.user.id)}','worker')"><span>我的公开档案</span><span>›</span></button><button class="menu-item" onclick="editProfile()"><span>个人资料</span><span class="menu-right">${state.profile?.role==='merchant'?'商家':'求职者'} ›</span></button><button class="menu-item" onclick="go('favorites')"><span>我的收藏</span><span class="menu-right">${state.favorites?.length||0} 个 ›</span></button><button class="menu-item" onclick="editSkills()"><span>技能标签</span><span class="menu-right">${esc((state.profile?.skills||[]).slice(0,2).join(' / ')||'去完善')} ›</span></button><button class="menu-item" onclick="showVerification()"><span>商家认证</span><span class="verify-pill ${v==='verified'?'ok':v==='pending'?'wait':v==='rejected'?'bad':''}">${verificationLabel(v)} ›</span></button><button class="menu-item" onclick="showLocationPicker()"><span>位置与附近兼职</span><span class="menu-right">${state.location?esc(state.location.label):'未授权'} ›</span></button><button class="menu-item" onclick="toast('真实资金结算将在支付与合规方案确定后接入')"><span>收入与结算</span><span class="menu-right">暂未接支付 ›</span></button><button class="menu-item danger" onclick="logout()"><span>退出登录</span><span>›</span></button></section>`;
 }
@@ -425,15 +410,14 @@ function showAuth(after){
 }
 async function authSubmit(mode){
   const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value,name=document.getElementById('authName').value.trim()||email.split('@')[0];if(!email||password.length<6){toast('请输入有效邮箱和至少 6 位密码');return}
-  if(!CLOUD_ENABLED){const db=localDb();let u=db.users.find(x=>x.email===email);if(mode==='signup'){if(u){toast('该邮箱已注册');return}u=enrichUser({id:uid('user'),email,name,role:'worker',city:CFG.CITY||'广州',skills:[],active:true});db.users.forEach(x=>x.active=false);db.users.push(u)}else{if(!u){toast('本地账号不存在，请先注册');return}db.users.forEach(x=>x.active=x.id===u.id)}saveLocal(db);state.user=u;state.profile=u;closeModal();await H.services.favorite.merge();await loadData();render();toast('登录成功');runAfterAuth();return}
-  try{if(mode==='signup'){const {data,error}=await sb.auth.signUp({email,password,options:{data:{name,role:'worker'}}});if(error)throw error;toast(data.session?'注册成功':'注册成功，请按邮箱提示完成验证')}else{const {error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;toast('登录成功')}closeModal()}catch(e){toast(e.message||'登录失败')}
+  try{const result=await H.services.auth.credentials(mode,{email,password,name});if(!CLOUD_ENABLED){state.user=result.user;state.profile=result.user;closeModal(null,true);await loadData();render();toast('登录成功');runAfterAuth();return}toast(result.needsEmailVerification?'注册成功，请按邮箱提示完成验证':mode==='signup'?'注册成功':'登录成功');closeModal(null,true);}catch(e){toast(e.message||'登录失败')}
 }
 function runAfterAuth(){if(typeof window._afterAuth==='function'){const fn=window._afterAuth;window._afterAuth=null;setTimeout(fn,80)}}
-function closeModal(e){if(e&&e.target!==e.currentTarget)return;modalRoot.innerHTML=''}
+function closeModal(e,keepAfterAuth=false){if(e&&e.target!==e.currentTarget)return;modalRoot.innerHTML='';if(!keepAfterAuth)window._afterAuth=null}
 async function demoLogin(role='worker'){
-  if(CLOUD_ENABLED){toast('云端模式请用邮箱注册；演示账号只用于本地模式');return}const db=localDb(),id=role==='merchant'?'merchant-demo':'worker-demo';let u=db.users.find(x=>x.id===id);if(!u){u=enrichUser({id,name:role==='merchant'?'南屿电商（演示）':'小何（演示）',email:`${id}@demo.local`,role,city:CFG.CITY||'广州',skills:role==='worker'?['PS','电商设计']:[],verification_status:role==='merchant'?'verified':'unverified',company_name:role==='merchant'?'南屿电商':'',active:true});db.users.push(u)}if(role==='merchant'){u.role='merchant';u.verification_status='verified';u.company_name=u.company_name||'南屿电商'}db.users.forEach(x=>x.active=x.id===id);saveLocal(db);state.user=u;state.profile=u;closeModal();await H.services.favorite.merge();await loadData();render();toast(role==='merchant'?'已切换为已认证演示商家':'已切换为演示求职者');runAfterAuth();
+  try{const user=await H.services.auth.demo(role);state.user=user;state.profile=user;closeModal(null,true);await loadData();render();toast(role==='merchant'?'已切换为已认证演示商家':'已切换为演示求职者');runAfterAuth();}catch(e){toast(H.errorText(e));}
 }
-async function logout(){H.inboxSequence=(H.inboxSequence||0)+1;state.inboxQuery='';state.inboxFilter='all';state.messageTab='chats';state.inbox=[];state.chatUnread=0;state.noticeUnread=0;state.orderTab='worker';window._afterAuth=null;state.selectedApplication=null;state.selectedTask=null;if(CLOUD_ENABLED)await sb.auth.signOut();else{const db=localDb();db.users.forEach(x=>x.active=false);saveLocal(db);state.user=null;state.profile=null;state.favorites=loadFavorites();await loadData();render()}toast('已退出')}
+async function logout(){H.inboxSequence=(H.inboxSequence||0)+1;state.inboxQuery='';state.inboxFilter='all';state.messageTab='chats';state.inbox=[];state.chatUnread=0;state.noticeUnread=0;state.orderTab='worker';window._afterAuth=null;state.selectedApplication=null;state.selectedTask=null;await H.services.auth.signOut();if(!CLOUD_ENABLED){state.user=null;state.profile=null;state.favorites=[];await loadData();render()}toast('已退出')}
 function editProfile(){const p=state.profile||{};modalRoot.innerHTML=`<div class="modal-backdrop"><div class="modal"><button class="modal-x" onclick="closeModal()">×</button><h2>个人资料</h2><div class="field"><label>昵称</label><input id="eName" value="${esc(p.name||'')}"></div><div class="field"><label>身份</label><select id="eRole"><option value="worker" ${p.role!=='merchant'?'selected':''}>求职者</option><option value="merchant" ${p.role==='merchant'?'selected':''}>商家</option></select></div><div class="field"><label>城市</label><input id="eCity" value="${esc(p.city||CFG.CITY||'广州')}"></div><div class="field"><label>个人简介</label><textarea id="eBio" maxlength="1000">${esc(p.bio||'')}</textarea></div><div class="field"><label>头像 HTTPS 地址（可选）</label><input id="eAvatar" value="${esc(p.avatar_url||'')}" placeholder="https://..."></div><button class="primary" onclick="saveProfile()">保存</button></div></div>`}
 async function saveProfile(){try{await H.services.auth.save({name:document.getElementById('eName').value.trim()||'用户',current_mode:document.getElementById('eRole').value,city:document.getElementById('eCity').value.trim()||'广州',bio:document.getElementById('eBio').value.trim(),avatar_url:document.getElementById('eAvatar').value.trim()});closeModal();await loadData();render();toast('资料已保存');}catch(e){toast(H.errorText(e));}}
 
@@ -449,7 +433,7 @@ async function submitVerification(fromPublish=false){try{await H.services.mercha
 function showReport(taskId){
   if(!requireLogin(()=>showReport(taskId)))return;modalRoot.innerHTML=`<div class="modal-backdrop"><div class="modal"><button class="modal-x" onclick="closeModal()">×</button><div class="auth-brand">任务举报</div><h2>哪里有问题？</h2><div class="field"><label>举报原因</label><select id="rReason"><option>要求交押金 / 费用</option><option>工资与描述不符</option><option>地点或工作内容不符</option><option>刷单 / 代收转账</option><option>虚假商家</option><option>其他违规</option></select></div><div class="field"><label>补充说明</label><textarea id="rDetail" placeholder="尽量描述发生了什么，方便平台审核"></textarea></div><button class="danger-btn" onclick="submitReport('${esc(taskId)}')">提交举报</button></div></div>`;
 }
-async function submitReport(taskId){try{const reason=document.getElementById('rReason').value,detail=document.getElementById('rDetail').value.trim();H.auth();if(CLOUD_ENABLED)await H.rpc('submit_report',{p_task_id:taskId,p_reason:reason,p_detail:detail});else await H.localWrite(db=>{db.reports.unshift({id:uid('report'),reporter_id:state.user.id,task_id:taskId,reason,detail,status:'open',created_at:Date.now()});});closeModal();await loadData();render();toast('举报已提交');}catch(e){toast(H.errorText(e));}}
+async function submitReport(taskId){try{await H.services.report.submit(taskId,document.getElementById('rReason').value,document.getElementById('rDetail').value.trim());closeModal();await loadData();render();toast('举报已提交');}catch(e){toast(H.errorText(e));}}
 
 function filterChoice(group,value,label){
   const on=String(state.filterDraft?.[group])===String(value);
@@ -517,7 +501,7 @@ async function openTask(id){
 
 function setPublishTab(t){state.publishTab=t;render()}
 function setOrderTab(t){state.orderTab=t;render()}
-function go(route){saveVisibleDrafts();++uxNavigation;state.findWork=false;if(route==='notifications'){state.messageTab='notices';route='messages';}else if(route==='messages')state.messageTab='chats';state.route=route;render();if(route==='messages')refreshMessages();else if(CLOUD_ENABLED)H.refreshLive();}
+function go(route){if(route==='notifications'){state.messageTab='notices';route='messages';}else if(route==='messages')state.messageTab='chats';if(['publish','favorites','orders','messages','chat'].includes(route)&&!state.user){requireLogin(()=>go(route));return;}saveVisibleDrafts();++uxNavigation;state.findWork=false;state.route=route;render();if(route==='messages')refreshMessages();else if(CLOUD_ENABLED)H.refreshLive();}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.setAttribute('role','status');d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2100)}
 
 // UI state is scoped to this tab and account; business data still uses shared services.
@@ -558,7 +542,7 @@ async function restoreLocation(){
 }
 window.addEventListener('popstate',()=>{if(uxRouteReady)restoreLocation();});
 
-Object.assign(window,{go,setFilter,openTask,applyTask,createTask,setPublishTab,setOrderTab,merchantDecision,completeApplication,cancelApplication,openChat,sendMessage,showAuth,authSubmit,closeModal,demoLogin,logout,editProfile,saveProfile,editSkills,saveSkills,showVerification,submitVerification,showReport,submitReport,showAdvancedFilters,pickAdvancedFilter,resetAdvancedFilters,applyAdvancedFilters,showLocationPicker,requestLocation,useDemoLocation,clearLocation,searchNow,clearSearch,setSort,toggleFavorite,favoritesPage,toast});
+Object.assign(window,{go,setFilter,openTask,applyTask,createTask,manageTaskStatus,setPublishTab,setOrderTab,merchantDecision,completeApplication,cancelApplication,openChat,sendMessage,showAuth,authSubmit,closeModal,demoLogin,logout,editProfile,saveProfile,editSkills,saveSkills,showVerification,submitVerification,showReport,submitReport,showAdvancedFilters,pickAdvancedFilter,resetAdvancedFilters,applyAdvancedFilters,showLocationPicker,requestLocation,useDemoLocation,clearLocation,searchNow,clearSearch,setSort,toggleFavorite,favoritesPage,toast});
 
 document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>go(b.dataset.route)));
 document.getElementById('accountBtn').addEventListener('click',()=>go('profile'));

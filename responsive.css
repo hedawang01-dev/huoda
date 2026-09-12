@@ -26,7 +26,7 @@ button:focus-visible{outline:3px solid #97BF4C;outline-offset:3px}
  .bottom-nav{display:none}.desktop-only{display:block}
  #app{max-width:1400px;margin:0 auto;padding:24px}
  .mode-strip{max-width:1352px;margin:12px auto 0;background:transparent;font-size:11px;padding:0 24px;text-align:right}
- .inbox-shell .mode-strip{display:block}.inbox-shell #cityBtn,.inbox-shell #notificationBtn{display:block}
+ .inbox-shell .mode-strip{display:block}.inbox-shell #cityBtn{display:block}
  .home-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:24px;align-items:start}
  .home-center{display:block;min-width:0}.desktop-filters{display:block;position:sticky;top:104px;max-height:calc(100dvh - 124px);overflow:auto;padding-right:8px;scrollbar-width:thin}
  .aside-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 22px}.aside-title h2{font-size:17px;margin:0}.aside-title .text-btn{font-size:11px}

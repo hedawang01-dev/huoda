@@ -56,8 +56,8 @@ test('local profile save cannot forge identity, verification or account flags',a
  assert.equal(h.saved,1);
 });
 
-test('queued local save and favorite merge stop after identity changes',async()=>{
- for(const action of ['save','merge','toggle']){
+test('queued local profile and favorite writes stop after identity changes',async()=>{
+ for(const action of ['save','toggle']){
   const gate=deferred(),h=harness({cloud:false,guest:['task'],gate});
   const pending=action==='save'?h.H.services.auth.save({name:'changed'}):h.H.services.favorite[action]('task');
   const rejected=assert.rejects(pending,changed);h.state.user={id:'B'};h.state.user={id:'A'};gate.resolve();await rejected;
@@ -72,12 +72,11 @@ test('cloud save does not hydrate the new account after its RPC returns',async()
  assert.equal(h.calls.length,1);assert.equal(h.state.profile.name,'B');
 });
 
-test('favorite merge cannot move guest favorites into another account',async()=>{
- const delay=deferred(),id='50000000-0000-0000-0000-000000000001';
- const h=harness({guest:[id],respond:()=>delay.promise});
- const pending=h.H.services.favorite.merge(),rejected=assert.rejects(pending,changed);
- await turn();h.state.user={id:'B'};h.state.favorites=['B-only'];delay.resolve({data:{id}});await rejected;
- assert.equal(h.calls.length,1);assert.deepEqual(h.state.favorites,['B-only']);assert.equal(h.storage.removed,0);
+test('guest favorite storage is ignored and never uploaded',async()=>{
+ const id='50000000-0000-0000-0000-000000000001';
+ const h=harness({guest:[id],respond:r=>r.op==='select'?{data:[]}:new Error('unexpected write')});
+ await h.H.services.favorite.merge();assert.deepEqual(plain(h.state.favorites),[]);
+ assert.equal(h.calls.some(r=>r.op==='upsert'||r.op==='insert'||r.op==='delete'),false);assert.equal(h.storage.removed,0);
 });
 
 test('favorite toggle/list reject late A data after an A→B→A switch',async()=>{
@@ -89,11 +88,11 @@ test('favorite toggle/list reject late A data after an A→B→A switch',async()
  }
 });
 
-test('successful favorite merge is deduplicated and clears guest storage only after reload',async()=>{
+test('favorite merge compatibility alias reloads account favorites only',async()=>{
  const id='50000000-0000-0000-0000-000000000001';
- const h=harness({guest:[id,id,'-'.repeat(36)],respond:r=>r.table==='tasks'?{data:{id}}:r.op==='upsert'?{data:null}:{data:[{task_id:id}]}});
- await h.H.services.favorite.merge();assert.deepEqual(plain(h.state.favorites),[id]);assert.equal(h.storage.removed,1);
- assert.equal(h.calls.filter(r=>r.op==='upsert').length,1);assert.equal(h.calls.find(r=>r.op==='upsert').value.user_id,'A');
+ const h=harness({guest:['guest-only'],respond:r=>r.op==='select'?{data:[{task_id:id}]}:{data:null}});
+ await h.H.services.favorite.merge();assert.deepEqual(plain(h.state.favorites),[id]);assert.equal(h.storage.removed,0);
+ assert.equal(h.calls.filter(r=>r.op==='upsert'||r.op==='insert').length,0);
 });
 
 test('cloud conversation fetches one page per call, with explicit cursors for 450 messages',async()=>{
@@ -175,7 +174,7 @@ test('005 migration: PostgreSQL cursor, permissions and backwards compatibility 
   const {merchant,worker,admin}=fixture.ids;
   const as=async(id,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role',$2,false)",[id||'',role]);await db.exec('set role '+role);};
   const scalar=async(sql,args=[])=>Object.values((await db.query(sql,args)).rows[0])[0];
-  const taskId=await scalar("select id from public.tasks where owner_id=$1 and status='open' and review_status='approved' limit 1",[merchant]);
+  const taskId=await scalar("select id from public.tasks where owner_id=$1 and status='recruiting' and review_status='approved' limit 1",[merchant]);
   await as(worker);const app=await scalar('select to_jsonb(public.apply_to_task($1))',[taskId]);
   await as(merchant);await db.query('select public.accept_application($1)',[app.id]);
   await db.exec('reset role');

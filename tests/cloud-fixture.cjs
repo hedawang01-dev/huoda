@@ -31,7 +31,7 @@ module.exports=async function fixture(){
  const as=async(id,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role',$2,false)",[id||'',role]);await db.exec('set role '+role);};
  const admin=fn=>serial(async()=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.role','service_role',false)");return fn(db);});
  const knownTables=new Set(['profiles','worker_profiles','merchant_profiles','tasks','applications','favorites','messages','notifications','reports','reviews']);
- const knownRpc=new Set(['search_nearby_tasks','search_tasks_v051','get_message_inbox','get_conversation_messages','get_public_profile','save_my_profile','apply_to_task','accept_application','transition_application','send_text_message','mark_conversation_read','mark_notification_read','submit_review','create_task']);
+ const knownRpc=new Set(['search_nearby_tasks','search_tasks_v051','search_tasks_v054','get_message_inbox','get_conversation_messages','get_public_profile','save_my_profile','apply_to_task','apply_to_task_v054','accept_application','transition_application','transition_application_v054','send_text_message','send_text_message_v054','mark_conversation_read','mark_notification_read','submit_review','submit_report','submit_merchant_verification','create_task','create_task_v054','transition_task_v054','edit_task_v054']);
  const requests=[];
  async function attach(context){
   await context.route('**/config.js',r=>r.fulfill({contentType:'text/javascript',body:"window.HUODA_CONFIG={SUPABASE_URL:'https://huoda-fixture.supabase.co',SUPABASE_KEY:'sb_publishable_fixture',CITY:'广州'};"}));

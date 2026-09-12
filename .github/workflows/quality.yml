@@ -1,0 +1,30 @@
+name: HUODA quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm start > huoda-server.log 2>&1 &
+      - run: |
+          for i in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8085/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat huoda-server.log
+          exit 1
+      - run: npm test
+      - run: npm run build:demo
+      - run: npm run verify:dist

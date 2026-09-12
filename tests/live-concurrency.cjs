@@ -1,7 +1,7 @@
 // Opt-in destructive-to-test-fixtures integration test. Use only a disposable test project.
 // Needs TEST_URL, TEST_ANON_KEY, TEST_MERCHANT_EMAIL/PASSWORD,
 // TEST_WORKER_EMAIL/PASSWORD, TEST_SECOND_WORKER_EMAIL/PASSWORD and TEST_TASK_ID.
-// TEST_TASK_ID: approved, open, exactly one remaining seat, no previous applications by these users.
+// TEST_TASK_ID: approved, recruiting, exactly one remaining seat, no previous applications by these users.
 const assert=require('node:assert/strict');
 async function run(){const e=process.env;for(const name of ['TEST_URL','TEST_ANON_KEY','TEST_TASK_ID','TEST_MERCHANT_EMAIL','TEST_MERCHANT_PASSWORD','TEST_WORKER_EMAIL','TEST_WORKER_PASSWORD','TEST_SECOND_WORKER_EMAIL','TEST_SECOND_WORKER_PASSWORD'])if(!e[name])throw new Error('Missing '+name);
  async function login(prefix){const response=await fetch(e.TEST_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:e.TEST_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:e[prefix+'_EMAIL'],password:e[prefix+'_PASSWORD']})});const data=await response.json();if(!response.ok)throw new Error('Test login failed: '+prefix);return data.access_token;}

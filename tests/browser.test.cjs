@@ -1,19 +1,31 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('@playwright/test');
-test('mobile browser: guest browse, favorites, nearby, apply, accept, chat and bilateral reviews',async()=>{
- const cache=path.join(process.env.LOCALAPPDATA||'','ms-playwright');const dirs=fs.existsSync(cache)?fs.readdirSync(cache).filter(x=>/^chromium-/.test(x)).sort().reverse():[];
+
+test('mobile browser: authenticated favorite and complete v5.4 application lifecycle',async()=>{
+ const cache=path.join(process.env.LOCALAPPDATA||'','ms-playwright');
+ const dirs=fs.existsSync(cache)?fs.readdirSync(cache).filter(x=>/^chromium-/.test(x)).sort().reverse():[];
  const executable=process.env.BROWSER_PATH||(dirs.length?path.join(cache,dirs[0],'chrome-win64','chrome.exe'):undefined);
  const browser=await chromium.launch({headless:true,executablePath:executable});
- try{const ctx=await browser.newContext({viewport:{width:390,height:844}});const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8085');await page.waitForSelector('.task-card');assert.equal(await page.locator('.task-card').count(),8);
- const out=path.resolve(__dirname,'../test-results');fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,'01-home.png'),fullPage:true});
- await page.locator('#homeSearch').fill('设计');await page.waitForTimeout(350);assert.equal(await page.locator('.task-card').count(),1);await page.getByRole('button',{name:'⌘ 线上'}).click();await page.locator('.task-title').first().click();await page.getByRole('button',{name:'♡ 收藏任务',exact:true}).click();await page.getByRole('button',{name:'立即接单',exact:true}).click();await page.waitForSelector('#authEmail');await page.getByRole('button',{name:'体验求职者',exact:true}).click();await page.waitForFunction(()=>state.applications.length===1);await page.waitForTimeout(100);assert.ok(await page.evaluate(()=>state.favorites.includes('demo-2')));
- await page.evaluate(async()=>{await logout();await demoLogin('merchant');go('orders');setOrderTab('merchant');});await page.getByRole('button',{name:'确认用人'}).click();await page.waitForFunction(()=>state.applications[0]?.status==='accepted');assert.equal(await page.evaluate(()=>localDb().tasks.find(t=>t.id==='demo-2').spots_left),0);
- await page.getByRole('button',{name:'站内聊天',exact:true}).click();await page.locator('#chatText').fill('你好，请确认交付要求。');await page.getByRole('button',{name:'发送',exact:true}).click();await page.waitForFunction(()=>state.messages.some(m=>m.content==='你好，请确认交付要求。'));
- await page.evaluate(async()=>{await logout();await demoLogin('worker');go('notifications');});await page.waitForSelector('.notification-card');assert.ok(await page.evaluate(()=>state.unreadCount)>0);await page.screenshot({path:path.join(out,'02-notifications.png'),fullPage:true});
- await page.evaluate(async()=>{await openChat(state.applications[0].id);});assert.ok(await page.evaluate(()=>state.messages.filter(m=>m.sender_id==='merchant-demo').every(m=>m.read_at)));
- await page.evaluate(()=>go('orders'));await page.getByRole('button',{name:'标记已完成',exact:true}).click();await page.waitForFunction(()=>state.applications[0]?.status==='completed');await page.getByRole('button',{name:'评价合作体验',exact:true}).click();await page.locator('#reviewComment').fill('需求清楚，沟通顺畅');await page.getByRole('button',{name:'提交评价',exact:true}).click();await page.waitForFunction(()=>state.reviews.length===1);
- await page.evaluate(async()=>{await logout();await demoLogin('merchant');go('orders');setOrderTab('merchant');});await page.getByRole('button',{name:'评价合作体验',exact:true}).click();await page.getByRole('button',{name:'提交评价',exact:true}).click();await page.waitForFunction(()=>state.reviews.length===1);await page.evaluate(()=>openPublicProfile('merchant-demo','merchant'));await page.waitForSelector('.credit-stats');assert.equal(await page.locator('.credit-stats b').first().innerText(),'5.0');await page.screenshot({path:path.join(out,'03-merchant-credit.png'),fullPage:true});
- await page.evaluate(async()=>{await logout();state.query='';state.filter='全部';go('home');});await page.getByRole('button',{name:'◎ 附近',exact:true}).click();await page.getByRole('button',{name:/使用广州演示位置/}).click();assert.ok(await page.evaluate(()=>filteredTasks().every(t=>distanceKm(t)<=3)));await page.screenshot({path:path.join(out,'04-nearby.png'),fullPage:true});
- assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
+ try{
+  const ctx=await browser.newContext({viewport:{width:390,height:844}}),page=await ctx.newPage(),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8085');await page.waitForSelector('.task-card');assert.equal(await page.locator('.task-card').count(),8);
+  const out=path.resolve(__dirname,'../test-results');fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,'01-home.png'),fullPage:true});
+  await page.locator('#homeSearch').fill('设计');await page.waitForTimeout(350);assert.equal(await page.locator('.task-card').count(),1);await page.getByRole('button',{name:'⌘ 线上'}).click();await page.locator('.task-title').first().click();
+  await page.getByRole('button',{name:'登录后收藏',exact:true}).click();await page.getByRole('button',{name:'体验求职者',exact:true}).click();await page.waitForFunction(()=>state.favorites.includes('demo-2'));assert.equal(await page.evaluate(()=>localStorage.getItem('huoda_favorites_v050_guest')),null);
+  await page.getByRole('button',{name:'立即接单',exact:true}).click();await page.waitForFunction(()=>state.applications.length===1&&state.applications[0].status==='applied');
+
+  await page.evaluate(async()=>{await logout();await demoLogin('merchant');go('orders');setOrderTab('merchant');});
+  await page.getByRole('button',{name:'标记已查看',exact:true}).click();await page.waitForFunction(()=>state.applications[0]?.status==='viewed');
+  await page.getByRole('button',{name:'开始沟通',exact:true}).click();await page.waitForFunction(()=>state.applications[0]?.status==='communicating');
+  await page.getByRole('button',{name:'站内聊天',exact:true}).click();await page.locator('#chatText').fill('你好，请确认交付要求。');await page.getByRole('button',{name:'发送',exact:true}).click();await page.waitForFunction(()=>state.messages.some(m=>m.content==='你好，请确认交付要求。'));
+  await page.evaluate(()=>{go('orders');setOrderTab('merchant');});await page.getByRole('button',{name:'录用',exact:true}).click();await page.waitForFunction(()=>state.applications[0]?.status==='accepted');assert.equal(await page.evaluate(()=>localDb().tasks.find(t=>t.id==='demo-2').spots_left),0);
+
+  await page.evaluate(async()=>{await logout();await demoLogin('worker');go('notifications');});await page.waitForSelector('.notification-card');assert.ok(await page.evaluate(()=>state.unreadCount)>0);await page.screenshot({path:path.join(out,'02-notifications.png'),fullPage:true});
+  await page.evaluate(async()=>{await openChat(state.applications[0].id);});assert.ok(await page.evaluate(()=>state.messages.filter(m=>m.sender_id==='merchant-demo').every(m=>m.read_at)));
+  await page.evaluate(()=>go('orders'));await page.getByRole('button',{name:'标记已完成',exact:true}).click();await page.waitForFunction(()=>state.applications[0]?.status==='completed');await page.getByRole('button',{name:'评价合作体验',exact:true}).click();await page.locator('#reviewComment').fill('需求清楚，沟通顺畅');await page.getByRole('button',{name:'提交评价',exact:true}).click();await page.waitForFunction(()=>state.reviews.length===1);
+
+  await page.evaluate(async()=>{await logout();await demoLogin('merchant');go('orders');setOrderTab('merchant');});await page.getByRole('button',{name:'评价合作体验',exact:true}).click();await page.getByRole('button',{name:'提交评价',exact:true}).click();await page.waitForFunction(()=>state.reviews.length===1);await page.evaluate(()=>openPublicProfile('merchant-demo','merchant'));await page.waitForSelector('.credit-stats');assert.equal(await page.locator('.credit-stats b').first().innerText(),'5.0');await page.screenshot({path:path.join(out,'03-merchant-credit.png'),fullPage:true});
+  await page.evaluate(async()=>{await logout();state.query='';state.filter='全部';go('home');});await page.getByRole('button',{name:'◎ 附近',exact:true}).click();await page.getByRole('button',{name:/使用广州演示位置/}).click();assert.ok(await page.evaluate(()=>filteredTasks().every(t=>distanceKm(t)<=3)));await page.screenshot({path:path.join(out,'04-nearby.png'),fullPage:true});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });

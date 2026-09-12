@@ -1,15 +1,18 @@
 {
   "name": "huoda-v050",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "scripts": {
     "start": "node scripts/serve.cjs",
-    "test": "node --test tests/*.test.cjs",
-    "check": "node scripts/check.cjs"
+    "test": "node --test --test-concurrency=1 tests/*.test.cjs",
+    "check": "node scripts/check.cjs",
+    "build": "node scripts/build.cjs",
+    "build:demo": "node scripts/build.cjs --allow-local-demo",
+    "verify:dist": "node scripts/verify-dist.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",
-    "@playwright/test": "1.55.0"
+    "@playwright/test": "^1.55.1"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4"

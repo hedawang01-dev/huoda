@@ -24,7 +24,7 @@ async function publishFields(page){
  await page.locator('#pLocation').fill('线上');await page.locator('#pDesc').fill('提供素材，交付五张精修图。');
 }
 test('UX: task links survive refresh, browser back/forward and missing tasks remain recoverable',async()=>withPage(async(page,context)=>{
- await page.evaluate(async()=>{await toggleFavorite(null,'demo-2');go('favorites');});await page.waitForSelector('.task-card');
+ await page.evaluate(async()=>{await demoLogin('worker');await toggleFavorite(null,'demo-2');go('favorites');});await page.waitForSelector('.task-card');
  await page.locator('.task-card').first().click();await page.waitForSelector('.detail-card h2');assert.match(page.url(),/#\/detail\/demo-2$/);
  await page.getByRole('button',{name:'← 返回',exact:true}).click();await page.waitForSelector('.saved-head');assert.match(page.url(),/#\/favorites$/);
  await page.goForward();await page.waitForSelector('.detail-card h2');assert.match(page.url(),/#\/detail\/demo-2$/);
@@ -45,11 +45,11 @@ test('UX: late task/chat responses cannot override a later navigation',async()=>
  });assert.equal(await page.evaluate(()=>state.route),'home');await page.waitForSelector('.task-card');
 }));
 test('UX: publish draft survives navigation and refresh with account isolation',async()=>withPage(async page=>{
- await page.evaluate(()=>go('publish'));await page.locator('#pTitle').fill('游客草稿');await page.locator('#pDesc').fill('不要丢失说明');
- await page.evaluate(()=>{go('home');go('publish');});assert.equal(await page.locator('#pTitle').inputValue(),'游客草稿');
+ await page.evaluate(async()=>{await demoLogin('worker');go('publish');});await page.locator('#pTitle').fill('求职者草稿');await page.locator('#pDesc').fill('不要丢失说明');
+ await page.evaluate(()=>{go('home');go('publish');});assert.equal(await page.locator('#pTitle').inputValue(),'求职者草稿');
  await page.reload();await page.waitForSelector('#pTitle');assert.equal(await page.locator('#pDesc').inputValue(),'不要丢失说明');
  await page.evaluate(()=>demoLogin('merchant'));assert.equal(await page.locator('#pTitle').inputValue(),'');await page.locator('#pTitle').fill('商家草稿');
- await page.evaluate(()=>demoLogin('worker'));assert.equal(await page.locator('#pTitle').inputValue(),'');
+ await page.evaluate(()=>demoLogin('worker'));assert.equal(await page.locator('#pTitle').inputValue(),'求职者草稿');
  await page.evaluate(()=>demoLogin('merchant'));assert.equal(await page.locator('#pTitle').inputValue(),'商家草稿');
  assert.equal(await page.locator('label[for="pTitle"]').count(),1);
 },1440));

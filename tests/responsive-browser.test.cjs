@@ -11,10 +11,10 @@ test('responsive: six required viewports, shared flows, sticky detail, desktop c
   await page.locator('.tool-select').selectOption('price');assert.equal(await page.locator('#taskList .task-title').first().innerText(),'小红书笔记排版 8 篇');
   await page.evaluate(()=>openTask('demo-2'));await check('detail');
   if(width>=768){assert.equal(await page.locator('.detail-action').evaluate(e=>getComputedStyle(e).position),'sticky');await page.getByRole('button',{name:'联系商家',exact:true}).click();await page.waitForSelector('#authEmail');await page.evaluate(()=>closeModal());}
-  await page.evaluate(()=>go('publish'));await page.locator('#pTitle').fill('保留表单草稿');await page.evaluate(()=>H.refreshLive());await page.waitForTimeout(400);assert.equal(await page.locator('#pTitle').inputValue(),'保留表单草稿');await check('publish');
-  await page.evaluate(()=>go('messages'));await check('messages');await page.evaluate(()=>go('profile'));await check('profile-guest');
+  await page.evaluate(()=>go('publish'));await page.waitForSelector('#authEmail');await page.evaluate(()=>closeModal());assert.equal(await page.evaluate(()=>state.route),'detail');
+  await page.evaluate(()=>go('messages'));await page.waitForSelector('#authEmail');await page.evaluate(()=>closeModal());await page.evaluate(()=>go('profile'));await check('profile-guest');
  }
- await page.setViewportSize({width:1440,height:900});await page.evaluate(async()=>{await demoLogin('worker');state.advancedFilters={...FILTER_DEFAULTS};state.query='';go('home');});
+ await page.setViewportSize({width:1440,height:900});await page.evaluate(async()=>{await demoLogin('worker');state.advancedFilters={...FILTER_DEFAULTS};state.query='';go('publish');});await page.locator('#pTitle').fill('保留表单草稿');await page.evaluate(()=>H.refreshLive());await page.waitForTimeout(400);assert.equal(await page.locator('#pTitle').inputValue(),'保留表单草稿');await page.evaluate(()=>go('home'));
  await page.locator('.desktop-filters button').filter({hasText:/^线上$/}).click();assert.equal(await page.locator('#taskList .task-card').count(),3);
  await page.locator('#desktopSalaryMin').fill('175');await page.locator('#desktopSalaryMax').fill('200');await page.getByRole('button',{name:'应用薪资',exact:true}).click();assert.equal(await page.locator('#taskList .task-card').count(),1);
  await page.evaluate(()=>applyTask('demo-2'));await page.waitForFunction(()=>state.applications.length===1);

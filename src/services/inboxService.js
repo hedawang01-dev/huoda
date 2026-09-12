@@ -5,7 +5,7 @@ H.services.inbox={
   const db=localDb(),user=state.user.id,q=query.trim().toLowerCase();
   const items=db.applications.filter(a=>[a.worker_id,a.merchant_id].includes(user)).map(a=>{
    const messages=db.messages.filter(m=>m.application_id===a.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)||String(b.id).localeCompare(String(a.id)));
-   if(!['accepted','completed'].includes(a.status)&&!messages.some(m=>m.message_type!=='system'))return null;
+   if(!['communicating','accepted','completed'].includes(a.status)&&!messages.some(m=>m.message_type!=='system'))return null;
    const task=db.tasks.find(t=>t.id===a.task_id)||{},peerId=a.worker_id===user?a.merchant_id:a.worker_id,peer=db.users.find(u=>u.id===peerId),last=messages[0];
    return {application_id:a.id,task_id:a.task_id,status:a.status,task_title:task.title||'任务沟通',company_name:task.company_name||'',peer_id:peerId,peer_name:peer?.name||(a.worker_id===user?task.company_name:'接单者')||'用户',peer_kind:a.worker_id===user?'merchant':'worker',avatar_url:peer?.avatar_url||'',price_fen:task.price_fen??Math.round(Number(task.price||0)*100),price_unit:task.price_unit,last_content:last?.content||'',last_type:last?.message_type||'text',last_sender_id:last?.sender_id,last_read_at:last?.read_at,updated_at:last?.created_at||a.created_at,unread_count:messages.filter(m=>m.sender_id!==user&&m.message_type!=='system'&&!m.read_at).length,_search:[peer?.name,task.company_name,task.title,...messages.map(m=>m.content)].join(' ').toLowerCase()};
   }).filter(Boolean).sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at)||a.application_id.localeCompare(b.application_id));

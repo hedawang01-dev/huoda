@@ -11,10 +11,10 @@ function messagesPage(){
 function renderInboxRows(){
  const box=document.getElementById('inboxList');if(!box)return;
  if(state.inboxError){box.innerHTML=`<div class="inbox-empty"><p>${esc(state.inboxError)}</p><button class="secondary" onclick="refreshMessages()">重新加载</button></div>`;return;}
- const list=(state.inbox||[]).filter(c=>state.inboxFilter==='unread'?c.unread_count>0:state.inboxFilter==='active'?c.status==='accepted':state.inboxFilter==='completed'?c.status==='completed':true);
+ const list=(state.inbox||[]).filter(c=>state.inboxFilter==='unread'?c.unread_count>0:state.inboxFilter==='active'?['communicating','accepted'].includes(c.status):state.inboxFilter==='completed'?c.status==='completed':true);
  box.innerHTML=list.length?list.map(c=>{
   const prefix=c.last_type==='system'?'[进展] ':c.last_sender_id===state.user.id?(c.last_read_at?'[已读] ':'[未读] '):'';
-  return `<button class="conversation-row ${c.unread_count?'has-unread':''}" onclick="openChat('${esc(c.application_id)}')"><div class="conversation-avatar ${c.peer_kind==='merchant'?'merchant':'worker'}">${inboxAvatar(c)}${inboxBadge(c.unread_count)}</div><div class="conversation-copy"><div class="conversation-top"><strong>${esc(c.peer_name)}</strong><time>${inboxTime(c.updated_at)}</time></div><div class="conversation-task">${esc(c.task_title)}<span> · ¥${Number(c.price_fen||0)/100}${c.price_unit==='小时'?'/小时':''}</span></div><p class="conversation-preview">${prefix}${esc(c.last_content||'商家已确认，可以直接聊聊工作安排')}${!['accepted','completed'].includes(c.status)?' · 合作已结束':''}</p></div></button>`;
+  return `<button class="conversation-row ${c.unread_count?'has-unread':''}" onclick="openChat('${esc(c.application_id)}')"><div class="conversation-avatar ${c.peer_kind==='merchant'?'merchant':'worker'}">${inboxAvatar(c)}${inboxBadge(c.unread_count)}</div><div class="conversation-copy"><div class="conversation-top"><strong>${esc(c.peer_name)}</strong><time>${inboxTime(c.updated_at)}</time></div><div class="conversation-task">${esc(c.task_title)}<span> · ¥${Number(c.price_fen||0)/100}${c.price_unit==='小时'?'/小时':''}</span></div><p class="conversation-preview">${prefix}${esc(c.last_content||'可以直接聊聊工作安排')}${!['communicating','accepted','completed'].includes(c.status)?' · 会话已结束':''}</p></div></button>`;
  }).join(''):`<div class="inbox-empty"><span class="empty-chat-icon">☏</span><h2>${state.inboxQuery?'没有找到相关聊天':state.inboxFilter==='unread'?'消息都看完了':state.inboxFilter&&state.inboxFilter!=='all'?'暂无这类会话':'还没有聊天'}</h2><p>${state.inboxQuery?'换个联系人、公司或关键词试试。':state.inboxFilter==='unread'?'有新消息时，这里会及时提醒你。':'商家确认报名后，就能在这里直接沟通。'}</p>${!state.inboxQuery&&(state.inboxFilter||'all')==='all'?'<button class="secondary" onclick="go(\'home\')">去找一单活</button>':''}</div>`;
 }
 function renderInboxNotices(){const box=document.getElementById('inboxNotices');if(!box)return;const notices=state.notifications.filter(n=>n.type!=='message');box.innerHTML=notices.length?notices.map(n=>`<button class="notification-card ${!n.read_at?'unread':''}" onclick="openNotification('${esc(n.id)}')"><div><b>${esc(n.title)}</b><p>${esc(n.body)}</p><small>${new Date(n.created_at).toLocaleString('zh-CN')}</small></div><span>${n.read_at?'':'●'}</span></button>`).join(''):'<div class="inbox-empty"><h2>暂无新通知</h2><p>报名、认证和任务审核进展会显示在这里。</p></div>';if(state.reports.length)box.insertAdjacentHTML('beforeend',`<h3 class="inbox-report-title">我的举报</h3>${state.reports.map(r=>`<div class="order-card"><b>${esc(r.reason)}</b><p class="muted">${({open:'平台处理中',resolved:'已处理',dismissed:'举报不成立'})[r.status]}</p></div>`).join('')}`);}
@@ -35,12 +35,7 @@ async function refreshMessages(){
  const current=()=>H.isCurrentSession(session)&&sequence===H.messageRefreshSequence;
  try{
   if(await H.services.inbox.load()===false||!current())return false;
-  if(CLOUD_ENABLED&&session.id){
-   const notices=H.unwrap(await sb.from('notifications').select('*').eq('user_id',session.id).order('created_at',{ascending:false}).limit(100));
-   if(!current())return false;
-   const reports=state.messageTab==='notices'?H.unwrap(await sb.from('reports').select('*').eq('reporter_id',session.id).order('created_at',{ascending:false})):null;
-   if(!current())return false;state.notifications=notices;if(reports)state.reports=reports;
-  }else if(session.id){const db=localDb();state.notifications=db.notifications.filter(n=>n.user_id===session.id);state.reports=db.reports.filter(r=>r.reporter_id===session.id);}
+  if(session.id&&state.messageTab==='notices'){const notices=await H.services.account.notices();if(!current())return false;state.notifications=notices.notifications;state.reports=notices.reports;}
   if(!current())return false;
   updateHeader();
   if(state.route==='messages'){

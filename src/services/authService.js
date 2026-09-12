@@ -28,5 +28,39 @@ H.services.auth={
    const u=db.users.find(u=>u.id===session.id);if(!u)H.fail('AUTH_REQUIRED');
    Object.assign(u,values);u.role=mode;state.profile=enrichUser(u);state.user=u;
   });
+ },
+ async current(){
+  if(CLOUD_ENABLED){const result=await sb.auth.getSession();if(result.error)throw result.error;return result.data.session?.user||null;}
+  return localDb().users.find(u=>u.active)||null;
+ },
+ onChange(handler){
+  if(!CLOUD_ENABLED)return {data:{subscription:{unsubscribe(){}}}};
+  return sb.auth.onAuthStateChange((event,session)=>handler(event,session));
+ },
+ async credentials(mode,{email,password,name}){
+  if(CLOUD_ENABLED){
+   if(mode==='signup'){
+    const result=await sb.auth.signUp({email,password,options:{data:{name,role:'worker'}}});if(result.error)throw result.error;
+    return {user:result.data.user||null,session:result.data.session||null,needsEmailVerification:!result.data.session};
+   }
+   const result=await sb.auth.signInWithPassword({email,password});if(result.error)throw result.error;return {user:result.data.user,session:result.data.session};
+  }
+  const db=localDb();let user=db.users.find(u=>u.email===email);
+  if(mode==='signup'){
+   if(user)H.fail('该邮箱已注册');
+   user=enrichUser({id:uid('user'),email,name,role:'worker',city:CFG.CITY||'广州',skills:[],active:true});db.users.push(user);
+  }else if(!user)H.fail('本地账号不存在，请先注册');
+  db.users.forEach(u=>u.active=u.id===user.id);saveLocal(db);return {user};
+ },
+ async demo(role='worker'){
+  if(CLOUD_ENABLED)H.fail('云端模式请用邮箱注册；演示账号只用于本地模式');
+  const db=localDb(),id=role==='merchant'?'merchant-demo':'worker-demo';let user=db.users.find(u=>u.id===id);
+  if(!user){user=enrichUser({id,name:role==='merchant'?'南屿电商（演示）':'小何（演示）',email:`${id}@demo.local`,role,city:CFG.CITY||'广州',skills:role==='worker'?['PS','电商设计']:[],verification_status:role==='merchant'?'verified':'unverified',company_name:role==='merchant'?'南屿电商':'',active:true});db.users.push(user);}
+  if(role==='merchant')Object.assign(user,{role:'merchant',current_mode:'merchant',verification_status:'verified',company_name:user.company_name||'南屿电商'});
+  db.users.forEach(u=>u.active=u.id===id);saveLocal(db);return user;
+ },
+ async signOut(){
+  if(CLOUD_ENABLED){const result=await sb.auth.signOut();if(result.error)throw result.error;return;}
+  const db=localDb();db.users.forEach(u=>u.active=false);saveLocal(db);
  }
 };

@@ -15,6 +15,8 @@ H.applyConversationPage=(data,{reset=false,older=false}={})=>{
  state.messages=replace?[...data.messages]:[...new Map([...existing,...data.messages].map(m=>[m.id,m])).values()].sort(H.messageOrder);
  if(replace||older){H.historyCursor=data.next_cursor||null;H.historyVersion=(H.historyVersion||0)+1;}
  H.historyConversation=id;state.selectedApplication=data.application;
+ const applicationIndex=state.applications.findIndex(application=>application.id===id);
+ if(applicationIndex>=0)state.applications[applicationIndex]=data.application;
 };
 H.renderHistoryControl=()=>{
  const list=app.querySelector('.chat-list');if(!list||H.historyConversation!==state.selectedApplication?.id||!H.historyCursor)return;

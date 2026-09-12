@@ -1,142 +1,128 @@
-# 活搭 HUODA v0.5.3
+# 活搭 HUODA 5.4
 
-基于现有版本渐进升级的响应式 Web App，手机与 PC 使用同一套代码、业务服务、Auth 和数据库。保留 Logo、口号及墨黑 / 暖白 / 青柠绿品牌，原历史版本目录未修改。
+活搭 5.4（包版本 0.5.4）在原 5.3 纯 HTML/CSS/JavaScript 项目上增量升级，保留现有品牌、页面结构、顶部搜索、PC/手机响应式布局和消息返回体验。前端没有改成 React 或 Vue。
 
-## v0.5.3 导航与返回调整
+当前源码已具备本地演示、Supabase 云端数据结构、统一 Service 数据访问、业务状态闭环和 GitHub + Vercel 生产构建。由于尚未创建真实 Supabase、GitHub 仓库和 Vercel 项目，公网与真实跨设备验收仍需按本文步骤完成；本地合同测试不能冒充真实上线。
 
-- 兼职搜索移到顶部导航栏，其他页面也可输入关键词并按回车／搜索进入结果。
-- 移除右上角独立通知图标；通知仍可从消息页面的通知标签查看。
-- 桌面对话页左上方新增“返回上一级”，直接返回消息列表；手机保留原对话返回入口。
-- 本版不变更数据库，沿用001–005迁移。
+## 5.4 已完成
 
-## v0.5.2 可靠性与使用体验
+- 游客可浏览、搜索和查看兼职；收藏、报名、聊天、发布及私有记录需要先登录。
+- 任务支持：draft 草稿、pending_review 审核中、recruiting 招聘中、full 已招满、ended 已结束、taken_down 已下架。
+- 报名支持：applied 已报名、viewed 商家已查看、communicating 沟通中、accepted 已录用、rejected 未录用、completed 已完成、cancelled 已取消。
+- 商家可保存草稿、提交审核、查看报名、发起沟通、录用/拒绝、结束招聘和下架任务；名额变化由数据库事务处理。
+- 任务结束或下架会关闭仍未决的报名；已录用合作可以继续完成和评价。
+- 收藏、消息、通知、报名、资料、评价和举报均有 Supabase 数据路径；页面不直接操作数据库，统一经过 src/services。
+- Realtime 只触发 Service 重读，任务、报名、消息、通知不会直接信任事件载荷。
+- 独立 /admin/ 后台包含商家认证、任务审核和举报处理；管理员身份由 Edge Function 与 admin_users 校验。
+- 生产构建只发布精确的 dist 白名单；缺少云端配置会停止构建，不会把公网网站降级成本地演示。
+- vercel.json 已处理 /admin 路径、缓存和基础安全响应头；Hash 路由刷新不需要服务端重写。
+- config.js、.env、Vercel 元数据、证书和构建产物均已忽略；浏览器构建会拒绝 Secret/Service Role key。
+- 支付、资金托管和提现未接入。
 
-- 任务专属链接支持刷新、浏览器前进和后退；迟到请求不再抢回页面。
-- 发布与聊天草稿按账号、会话保存在当前标签页，刷新可恢复；提交成功会清除对应草稿。
-- 发布、发消息增加重复点击保护；明确区分“写入成功、读取失败”，避免误重发。
-- 切换账号时清空私有状态并拒绝旧响应，覆盖 A→B→A；收藏合并失败保留游客数据。
-- 收藏页、消息搜索和后台审核队列只接收当前请求；分页加载失败保留已有列表。
-- 断网和刷新失败可见提示、联网重读；不在无关页面下载聊天正文。
-- 聊天历史增加参与者专属的游标分页接口，不再只能看到最近200条。
-- 预览服务限制为页面所需资源；审核后台配置不完整时明确报错。
+初始检查见 docs/V054_项目检查报告.md，最终改动和验收见 docs/V054_升级与验收报告.md。
 
-完整问题与结果见 [v0.5.2 团队改进与验收报告](docs/V052_团队改进与验收报告.md)。本版本仍需目标 Supabase 的真实上线验收。
+## 5.3 恢复点
 
-已运行001–004的数据库，只追加执行 `supabase/migrations/202609110005_service_hardening.sql`，然后更新前端。不要重复执行旧迁移。
+- Git commit：6a95a0a，tag：v5.3-stable
+- 文件备份：C:\Users\h'x'c\Desktop\兼职平台开发\备份\v5.3-stable_20260911_223322
 
-## v0.5.1 PC 响应式与共享数据
+如需检查旧版，可运行 git show v5.3-stable。不要在有未保存改动时直接执行会覆盖工作区的 Git 恢复命令。
 
-- 手机 <768px 保留底部导航；平板 768–1199px 两栏；PC ≥1200px 顶部导航 + 筛选/任务流/辅助三栏。
-- 详情左内容右 sticky 操作；消息左会话右聊天；个人中心左菜单右内容；发布宽屏表单。
-- 新增最低/最高报酬及计价单位筛选，服务端过滤后分页。
-- 认证标识随受保护商家状态更新；Realtime 配合重读和可见页 15 秒轮询。
-- 本地演示明确提示不能跨设备同步。真实配置未提供，目前不能宣称已完成真实 Supabase / 公网手机电脑互通。
+## 目录结构
 
-完整文件清单和十三项验收答复：[PC 开发验收报告](docs/V051_PC_开发验收报告.md)。不熟悉 Supabase 时请看：[云端接入，从这里开始](docs/云端接入_从这里开始.md)。
+    huoda_v050/
+    ├─ index.html                 用户端入口
+    ├─ app.js                     路由、状态与现有页面模板
+    ├─ style.css / responsive.css / status.css
+    ├─ config.js                  本机配置，已被 Git 忽略
+    ├─ config.example.js          可提交的配置模板
+    ├─ admin/                     独立审核入口、页面和 Service
+    ├─ src/core/                  Service 注册、同步、启动
+    ├─ src/pages/                 消息、档案、响应式与聊天历史
+    ├─ src/services/              Auth、任务、报名、收藏、消息等 13 个 Service
+    ├─ supabase/migrations/       001–006 增量迁移
+    ├─ supabase/functions/        admin-review Edge Function
+    ├─ scripts/                   本地服务、检查、构建、dist 校验
+    ├─ tests/                     SQL/RLS、浏览器、跨端和部署测试
+    ├─ docs/                      检查、设计、迁移和验收文档
+    ├─ .github/workflows/quality.yml
+    ├─ .gitignore
+    ├─ vercel.json
+    └─ package.json
 
-已安装消息版本的数据库只追加运行 `202609100004_desktop_sync.sql`。若只有前两份迁移，先补消息迁移 `003` 再执行 `004`；不要重跑已执行的文件。
+## 本地启动
 
-## v0.5.1 消息入口改版
+首次在一台新电脑上运行：
 
-- 底部“接单”改为“消息”，默认就是会话列表；点击整行直接聊天。
-- 会话显示对方、关联任务、最后消息、时间与未读数，按最新消息排序。
-- 支持联系人 / 公司 / 全部聊天记录关键词搜索，以及全部 / 未读 / 进行中 / 已完成筛选。
-- “聊天”和“通知”分开，底部角标不重复计算同一条聊天通知。
-- 报名、确认、完成仍在“我的 → 接单与报名记录”；消息页也提供快捷入口。
-- 聊天返回消息列表，保留筛选；已有历史的结束合作可阅读聊天，但不能继续发送。
-- 云端新增 get_message_inbox RPC，用完整消息记录计算最新摘要和未读数，不受最近 200 条聊天显示上限影响。
+    npm ci
+    npm start
 
-消息功能由 `202609100003_message_inbox.sql` 提供，本次完整升级还需要 `004`。本地模式直接刷新页面，原本地数据继续保留。
+打开：
 
-## 立即运行
+- 用户端：http://127.0.0.1:8085/
+- 审核后台：http://127.0.0.1:8085/admin/
 
-本机已安装 Node.js。在本目录执行 `npm start`，打开 http://127.0.0.1:8085 。也可双击 `启动活搭.cmd`。
+也可以双击 启动活搭.cmd。本地 config.js 的 Supabase URL/key 为空时是明确标识的 LocalStorage 演示模式，只在当前浏览器保存，不会跨设备。
 
-- 普通用户入口：`/`
-- 独立审核入口：`/admin/`
-- 本地演示无需 npm install、数据库或联网。SDK 已包含在 vendor。
-- 使用 localhost，不建议直接双击 index.html，以保证定位、跨标签数据与浏览器安全 API 可用。
+常用检查：
 
-## 数据模式与配置
+    npm run check
+    npm test
+    npm run build:demo
+    npm run verify:dist
+    npm audit
 
-`config.js` 中 SUPABASE_URL / SUPABASE_KEY 留空：LocalStorage 演示，独立命名空间 `huoda_mvp_v050`，不修改旧版缓存。演示账户只是身份切换，密码不存储、不校验，不能保管真实信息。
+## 生产构建
 
-填入真实 Supabase URL 与 **publishable / anon key**：启用 Auth、RPC、RLS、Storage、Realtime。连接失败显示错误，不会悄悄切换演示数据。config.js 不进入 Git，缺少时复制 config.example.js。
+生产构建只接受 Supabase 的公开 Project URL 与 publishable/anon key：
 
-**service_role 只允许存在于服务端环境变量，不能写入任何前端配置。**
+    $env:HUODA_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+    $env:HUODA_SUPABASE_PUBLISHABLE_KEY="sb_publishable_YOUR_PUBLIC_KEY"
+    npm run build
+    npm run verify:dist
 
-## P0 功能
+生成的 dist/config.js 会包含这两项公开浏览器连接信息。数据库密码、Secret key、Service Role key、管理员密码不得写入源码、config.js、GitHub 或 Vercel。
 
-| 能力 | 实现 |
-|---|---|
-| 游客 | 浏览、搜索、组合筛选、详情、公开信用页、收藏；报名时登录 |
-| 附近 | WGS84，默认 3km，可选 1/3/5/10km；云端 PostGIS ST_DWithin/ST_Distance/GIST |
-| 查询 | 服务端过滤、真实总数、每页 20 条、加载更多、280ms 防抖、过期响应丢弃 |
-| 金额时间 | 整数分，保留旧金额；可选开始/结束时间；明确工作地点坐标 |
-| 报名 | RPC 鉴权、唯一约束、任务行锁、确认扣名额、已接受撤回归还名额 |
-| 收藏 | 游客登录合并、账户隔离、云端同步；失败保留待合并数据 |
-| 消息通知 | 文本、系统消息、已读、Realtime、总未读角标、通知跳对应接单/会话 |
-| 评价档案 | 完成后双方各一次评价；技能简介、头像 URL、完成数、评分及真实评价 |
-| 认证 | JPG/PNG/PDF，10MB，私有 Storage path，审核员 60 秒 signed URL |
-| 审核 | 独立商家/任务/举报队列；Edge Function 验 JWT/admin_users，数据库审计 |
-| 任务修改 | 未确认用人的任务可改标题/时间说明/内容，修改后强制重新审核 |
-| 演示 | 8 条本地任务、独立审核模拟器、28 条云端测试 seed |
+## 新建 Supabase 项目
 
-“为你匹配”是规则分，不是 AI 概率：技能重合 40、3km 内 20、近 7 天 5。未采集的偏好和历史行为项不加分，目前最高 65 分；无技能游客按新近任务排序。
+1. 打开 https://supabase.com/dashboard，创建项目并自行保管数据库密码。
+2. 在 SQL Editor 按 MIGRATION.md 的顺序运行 supabase.sql 和 001–006；生产库不要运行 seed.sql。
+3. 在 Project Connect/API Keys 中复制 Project URL 和 publishable key。它们是浏览器公开连接信息，不是数据库密码。
+4. 在 Authentication → URL Configuration 中，先填本地地址，Vercel 发布后再加入正式 HTTPS 域名。
+5. 注册管理员账号后，只在 SQL Editor 将该账号写入 admin_users；普通前端无权授予管理员。
+6. 部署 supabase/functions/admin-review，并把 ADMIN_ALLOWED_ORIGINS 设置为正式 Vercel 域名。Supabase 管理函数端服务变量，不把它复制到前端。
 
-## 本地体验流程
+更易读的逐步说明见 docs/云端接入_从这里开始.md。
 
-1. 游客搜索“设计”→线上→详情→收藏→接单→弹窗选“体验求职者”。
-2. 我的→退出→体验已认证商家→接单→商家待确认→确认用人，名额减少。
-3. 双方从接单或右上角通知入口聊天；打开会话标记已读。
-4. 切回求职者→标记已完成→评价；切回商家也可评价。详情商家名进入信用页，报名记录可查看求职者档案。
-5. 注册新本地商家→商家认证→18 位信用代码及测试文件→独立 `/admin/` 认证通过→发布→后台任务审核。
-6. 任务详情举报→后台处理→通知中心查看状态。
+## 新建 GitHub 仓库并上传
 
-本地审核模拟器没有真正权限边界，只能操作本地演示数据，不能影响云端。
+在 GitHub 网页创建一个空仓库，例如 huoda。不要勾选自动创建 README、.gitignore 或 License，因为本地仓库已有这些文件。然后在项目目录执行：
 
-## Supabase 初始化
+    git remote add origin https://github.com/YOUR_NAME/huoda.git
+    git branch -M main
+    git push -u origin main --tags
 
-详细步骤见 [MIGRATION.md](MIGRATION.md)。新库先执行根目录 `supabase.sql`，再依序执行 `supabase/migrations/*.sql`；旧 v0.4.3 库依序运行五份 migration，**不要再执行旧基线覆盖新 RLS**。
+如果已经存在 origin，使用 git remote set-url origin。上传前用 git status 确认 config.js、.env、dist、node_modules 没有进入提交。
 
-在隔离测试项目创建 Auth 账号：merchant@huoda.test、worker@huoda.test、admin@huoda.test，自行设置密码，然后执行 `supabase/seed.sql`。seed 不能用于生产。
+## 创建 Vercel 项目并发布
 
-配置 Auth Site URL、Redirect URLs、邮箱验证策略。config.js 填入 URL/公开 key。安装并登录 Supabase CLI 后部署：
+1. 打开 https://vercel.com/dashboard，选择 Add New → Project，导入刚创建的 GitHub 仓库。
+2. Framework Preset 选择 Other。vercel.json 已指定 npm run build 与输出目录 dist。
+3. 在 Project Settings → Environment Variables 添加 HUODA_SUPABASE_URL 和 HUODA_SUPABASE_PUBLISHABLE_KEY；城市与默认坐标可选。
+4. 不要在 Vercel 添加数据库密码、Secret key 或 Service Role key。
+5. 点击 Deploy。发布后检查 /、/#/detail/...、/#/messages 和 /admin/。
+6. 把正式域名加入 Supabase Authentication 的 Site URL/Redirect URLs，并将同一 Origin 写入 Edge Function 的 ADMIN_ALLOWED_ORIGINS 后重新部署函数。
 
-```powershell
-supabase link --project-ref YOUR_PROJECT_REF
-supabase secrets set ADMIN_ALLOWED_ORIGINS=https://admin.example.com
-supabase functions deploy admin-review
-```
+## 以后如何自动发布
 
-Edge Function 平台提供服务角色环境变量。管理员只能由数据库管理员写入 admin_users。审核页面独立部署或使用独立路径，保留相对 config/vendor/style 路径；普通 App 没有审核入口。SQL Editor 与 CLI 应选定一种 migration 历史管理方式，避免重复执行。
+Vercel 与 GitHub 连接后，每次推送 main 都会自动构建并发布生产版本：
 
-## 结构
+    git add -A
+    git commit -m "说明本次修改"
+    git push
 
-app.js 保留页面模板和路由；src/core 是服务边界与初始化；src/services 包含 11 个业务服务；src/pages/messages.js 是会话列表，src/pages/community.js 保留档案、评价、修改任务页面。admin 是独立审核页面，supabase/functions 是服务端审核接口，supabase/migrations 是增量迁移。tests 包含数据库权限、浏览器流程和云端 SDK 合同测试。
+Pull Request 会生成 Vercel 预览地址；合并到 main 后生成正式部署。GitHub Actions 会运行依赖审计、语法检查、浏览器/数据库测试和演示构建；Vercel 生产构建还会再次检查云端配置和公开文件白名单。
 
-## 检查
+## 上线前仍需真实验收
 
-```powershell
-npm ci
-npm run check
-# 在另一个终端先运行 npm start
-npm test
-```
-
-其它机器先 `npx playwright install chromium`，或设置 BROWSER_PATH 指向 chrome.exe。验证记录与逐表检查见 [TESTING.md](TESTING.md)。
-
-## 验证边界与已知问题
-
-- 已进行本地浏览器、PostgreSQL 内核和云端 SDK 合同测试；**没有真实 Supabase 配置，真实 PostGIS、跨连接并发、Auth 邮件、Realtime、私有 Storage 端到端验收尚未完成**。
-- 本地数据库测试用 PGlite 执行真实 SQL/RLS/PLpgSQL；空间函数用替身，只验证参数和流程。SDK 合同测试模拟 HTTP 响应，不能代替真实云端验收。
-- 首页 offset 分页可能在连续新增任务时产生分页漂移；规模增大后改为 keyset cursor。
-- 通知显示最近 100 条，暂未提供通知历史翻页；聊天支持200条一页的历史查询。通知总未读数独立计数。“我的接单/我发布的”暂未提供历史分页，受目标 API 行数上限影响。
-- 执照上传成功但提交失败可能留下本人私有孤立对象，后续需管理员清理作业。客户端没有覆盖/删除已提交证据的权限。
-- 历史商家和任务需重新审核；旧坐标与城市必须核实回填。迁移前必须备份。
-- 本地演示使用 Web Locks 和 storage 事件；不支持 Web Locks 的浏览器仅保证单标签顺序，不提供多端事务。
-- 任务完成允许任一参与方提交，不涉及资金；争议/双重确认留后续。固定时间与 time_text 并存，修改时间说明不自动改变固定时间。
-
-## 下一版
-
-先完成目标 Supabase 验收，再做国内短信、地图选点和坐标转换、历史分页、离线缓存、图片消息。支付、托管、提现、税务和 AI 模型不属于本版。
+真实 Supabase/Vercel 建好后，必须在手机和电脑上用同一账号验证：注册登录、收藏同步、报名全状态、双向消息与未读、商家发布和审核、评价、举报、私有执照、后台权限、断网恢复和刷新。当前本地 PGlite 与模拟 SDK 已验证契约，但不等于真实 PostGIS、Auth 邮件、Realtime、Storage、Edge Function 和公网网络已经通过。
