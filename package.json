@@ -19,7 +19,7 @@
     "supabase": "^2.117.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.57.4"
+    "@supabase/supabase-js": "2.118.0"
   },
   "description": "活搭 HUODA：兼职与线上任务协作 Web 应用（非商业源码可见）",
   "license": "PolyForm-Noncommercial-1.0.0",
