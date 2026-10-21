@@ -1,0 +1,47 @@
+name: Bug 反馈
+description: 提交可复现的运行或行为问题（安全漏洞请走私密流程）
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "请先阅读 SECURITY.md。不要包含真实账号、密钥、用户资料或生产数据。"
+  - type: input
+    id: version
+    attributes:
+      label: 包版本或提交
+      placeholder: "例如 0.5.4 / 提交 SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 运行模式
+      options:
+        - 本地匿名演示
+        - 自有隔离 Supabase 开发环境
+        - 其他（请在复现中解释）
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: 操作系统、Node/npm、浏览器与屏幕尺寸
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏日志或匿名截图

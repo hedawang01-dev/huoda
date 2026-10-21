@@ -31,7 +31,7 @@ if(!Number.isFinite(lat)||lat < -90||lat > 90||!Number.isFinite(lng)||lng < -180
 
 const files=[
   'index.html','app.js','style.css','responsive.css','status.css',
-  'THIRD_PARTY_NOTICES.md','vendor/supabase-2.57.4.js','vendor/SUPABASE-LICENSE.txt','vendor/DEPENDENCY_LICENSES.txt',
+  'LICENSE','THIRD_PARTY_NOTICES.md','vendor/supabase-2.57.4.js','vendor/SUPABASE-LICENSE.txt','vendor/DEPENDENCY_LICENSES.txt',
   'admin/index.html','admin/adminService.js','admin/admin.js',
   'src/core/services.js','src/core/sync.js','src/core/bootstrap.js',
   'src/services/locationService.js','src/services/recommendationService.js','src/services/taskService.js',

@@ -1,5 +1,11 @@
 # 活搭 HUODA 5.4 测试与上线验收
 
+> 2026-10-21 补充：以下旧覆盖说明是历史文档；本次实际结果见 OPEN_SOURCE_READINESS_REPORT.md。
+> 首次执行 npm ci --ignore-scripts。npm start 的 /config.js 缺失时提供匿名模板；已有配置优先。
+> 使用 Node.js 22。可执行 npx playwright install chromium；或在 PowerShell 中设置 $env:BROWSER_PATH 为自己的 Chrome/Chromium 可执行路径。
+> 普通 npm test 不需要真实云端账号，不包含 tests/live-concurrency.cjs。该显式集成脚本会写入报名并消耗名额，只能经另行授权用于可丢弃隔离项目，本次未执行。
+> 默认不加载 .env；模板变量如需使用，应由调用者安全加载。不要把 test-results 或 .local 发布到源码仓库。
+
 ## 本地自动化
 
 先启动本地服务：
@@ -9,6 +15,8 @@
 在另一个终端运行：
 
     npm run check
+    npm run check:migrations
+    npm run check:publication
     npm test
     npm run build:demo
     npm run verify:dist
@@ -81,4 +89,4 @@
 
 ## 验收边界
 
-真实 Supabase 已完成基础迁移与 001–006、Storage 桶和 Edge Function 部署，且已验证游客搜索 RPC 与匿名 RLS 拒绝。Auth 邮件、双账号 WebSocket Realtime、真实执照上传、后台完整处理、跨连接并发和 Vercel 公网设备验收仍待执行；本地 PGlite 与模拟 SDK 结果不能替代这些剩余场景。
+94754e1 保留的 2026-09-12 历史记录报告过 Supabase 基础迁移/Storage/Edge Function 部署及部分匿名 RLS/RPC 验证；本次私有仓库更新没有重连云端确认当前状态。真实 Auth 邮件、WebSocket Realtime、Storage 上传、后台全链路、跨连接并发和公网设备验收仍需独立执行。本地 PGlite、模拟 SDK 和浏览器测试只证明代码与 SQL 合同可运行，不证明外部服务已经上线。

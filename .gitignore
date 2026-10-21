@@ -8,7 +8,6 @@ test-results/
 dist/
 .vercel/
 .supabase/
-supabase/.temp/
 .idea/
 .vscode/
 .DS_Store
@@ -20,3 +19,18 @@ Thumbs.db
 *.pfx
 *.crt
 *.cer
+
+# Local data, reports and disposable artifacts (keep SQL migrations tracked)
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+.cache/
+coverage/
+*.tmp
+*.bak
+*~
+
+# Supabase CLI local connection metadata
+supabase/.temp/

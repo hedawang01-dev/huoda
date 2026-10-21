@@ -1,0 +1,30 @@
+{
+  "checkedOn": "2026-10-21",
+  "account": "hedawang01-dev",
+  "repository": "hedawang01-dev/huoda",
+  "visibility": "private",
+  "permissions": {
+    "admin": true,
+    "maintain": true,
+    "push": true,
+    "pull": true
+  },
+  "source": "Authenticated GitHub connector account and repository metadata; no remote mutations.",
+  "officialActionRefs": {
+    "actions/checkout@v4": {
+      "sha": "11d5960a326750d5838078e36cf38b85af677262",
+      "source": "https://api.github.com/repos/actions/checkout/git/ref/tags/v4"
+    },
+    "actions/setup-node@v4": {
+      "sha": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "source": "https://api.github.com/repos/actions/setup-node/git/ref/tags/v4"
+    }
+  },
+  "actionsExecutedOnGitHub": false,
+  "privateVulnerabilityReportingEnabled": false,
+  "repositoryVisibilityChanged": false,
+  "pushed": false,
+  "releaseCreated": false,
+  "applicationSubmitted": false,
+  "ownershipProvenByAdminPermission": false
+}

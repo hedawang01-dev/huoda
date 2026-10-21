@@ -9,6 +9,7 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const publishableKey=`sb_publishable_${'a'.repeat(32)}`;
 const expectedDist=[
+  'LICENSE',
   'THIRD_PARTY_NOTICES.md','admin/admin.js','admin/adminService.js','admin/index.html','app.js','config.js','index.html','responsive.css','status.css','style.css',
   'src/core/bootstrap.js','src/core/services.js','src/core/sync.js',
   'src/pages/chatHistory.js','src/pages/community.js','src/pages/messages.js','src/pages/responsive.js',
@@ -24,7 +25,7 @@ function fixture(t){
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'huoda-deploy-v054-'));
   t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
   for(const relative of [
-    'index.html','app.js','style.css','responsive.css','status.css','THIRD_PARTY_NOTICES.md','admin','src','vendor',
+    'index.html','app.js','style.css','responsive.css','status.css','THIRD_PARTY_NOTICES.md','LICENSE','admin','src','vendor',
     'scripts/build.cjs','scripts/verify-dist.cjs'
   ]){
     const source=path.join(root,...relative.split('/'));

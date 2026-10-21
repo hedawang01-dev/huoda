@@ -6,10 +6,12 @@
     "start": "node scripts/serve.cjs",
     "test": "node --test --test-concurrency=1 tests/*.test.cjs",
     "check": "node scripts/check.cjs",
-    "check:migrations": "node scripts/check-migrations.cjs",
     "build": "node scripts/build.cjs",
     "build:demo": "node scripts/build.cjs --allow-local-demo",
-    "verify:dist": "node scripts/verify-dist.cjs"
+    "verify:dist": "node scripts/verify-dist.cjs",
+    "check:publication": "node scripts/publication.cjs check",
+    "prepare:publication": "node scripts/publication.cjs pack",
+    "check:migrations": "node scripts/check-migrations.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",
@@ -18,5 +20,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4"
+  },
+  "description": "活搭 HUODA：兼职与线上任务协作 Web 应用（非商业源码可见）",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "engines": {
+    "node": ">=22"
   }
 }

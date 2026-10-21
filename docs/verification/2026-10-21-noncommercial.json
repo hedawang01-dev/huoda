@@ -1,0 +1,62 @@
+{
+  "checked_on": "2026-10-21",
+  "timezone": "Asia/Shanghai",
+  "scope": "Noncommercial licensing update, no external publication",
+  "license": {
+    "spdx": "PolyForm-Noncommercial-1.0.0",
+    "source": "https://polyformproject.org/licenses/noncommercial/1.0.0.txt",
+    "sha256": "ffcca38841adb694b6f380647e15f17c446a4d1656fed51a1e2041d064c94cc8",
+    "official_text_unchanged": true,
+    "third_party_licenses_unchanged": true,
+    "classification": "noncommercial source-available; not OSI open source"
+  },
+  "syntax": {
+    "javascript_files": 50,
+    "exit_code": 0
+  },
+  "distribution_regression": {
+    "expected_red": {
+      "tests": 1,
+      "failed": 1,
+      "reason": "LICENSE missing from dist"
+    },
+    "green": {
+      "tests": 7,
+      "passed": 7,
+      "failed": 0
+    }
+  },
+  "full_test": {
+    "tests": 81,
+    "passed": 81,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 75341.2599,
+    "exit_code": 0
+  },
+  "demo_build": {
+    "files": 34,
+    "exit_code": 0,
+    "license_matches_source": true
+  },
+  "verify_dist": {
+    "exit_code": 0
+  },
+  "audit": {
+    "total_known_vulnerabilities": 0,
+    "exit_code": 0
+  },
+  "not_verified": [
+    "live Supabase and public deployment",
+    "physical devices and full WCAG acceptance",
+    "remote GitHub visibility",
+    "copyright identity and all original material rights",
+    "Codex for Open Source acceptance of restricted license"
+  ],
+  "github_push": false,
+  "visibility_changed": false,
+  "release_created": false,
+  "application_submitted": false,
+  "record_status": "Historical licensing-step evidence; later account, packaging and test verification supersedes current-state claims.",
+  "superseded_by": "2026-10-21-prepublication.json"
+}

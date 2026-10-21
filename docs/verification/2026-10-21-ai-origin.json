@@ -1,0 +1,82 @@
+{
+  "checkedOn": "2026-10-21",
+  "scope": "AI-origin clarification and security contact documentation; no executable source changes",
+  "maintainerAccount": "hedawang01-dev",
+  "originEvidence": {
+    "type": "direct maintainer statement in this conversation",
+    "statement": "代码和素材都是你生成的",
+    "scope": "Project-created code and materials as described by the maintainer; excludes known third-party dependencies and vendor code.",
+    "record": "../AI_PROVENANCE.md",
+    "independentLineByLineAiOriginVerified": false
+  },
+  "officialSources": [
+    {
+      "url": "https://openai.com/policies/terms-of-use/",
+      "basis": "Output rights between user and OpenAI only, to the extent permitted by applicable law; similarity and third-party exclusions."
+    },
+    {
+      "url": "https://openai.com/policies/service-terms/#4-codex-and-code-generation",
+      "basis": "Code-generation outputs including Codex may be subject to third-party licenses."
+    },
+    {
+      "url": "https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository",
+      "basis": "Public repositories may enable private vulnerability reporting; prepared form does not enable it."
+    }
+  ],
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "standardLicenseChanged": false,
+  "thirdPartyLicensesChanged": false,
+  "securityContact": {
+    "publicEmailRequired": false,
+    "plannedChannel": "GitHub private vulnerability reporting after separately approved publication",
+    "currentlyEnabled": false,
+    "mustVerifyBeforeClaimingAvailable": true
+  },
+  "readinessConclusion": "May enter human review and publication confirmation",
+  "remainingOwnerDecisions": [
+    "Review final source snapshot and choose target repository",
+    "Review historical privacy only if publishing old history",
+    "Personally decide whether and when to publish"
+  ],
+  "unverifiedClaimsNotMade": [
+    "Every line independently AI-generated or original",
+    "Copyrightability or trademark exclusivity",
+    "Freedom from all third-party claims or absolute prevention of commercial use",
+    "Live production acceptance",
+    "Codex for Open Source eligibility"
+  ],
+  "engineeringEvidence": {
+    "record": "2026-10-21-prepublication.json",
+    "fullTests": 91,
+    "passed": 91,
+    "failed": 0,
+    "skipped": 0,
+    "fullSuiteRerunForThisDocumentationOnlyChange": false
+  },
+  "currentDocumentationAndPackagingChecks": {
+    "syntax": {
+      "javascriptFiles": 52,
+      "exitCode": 0
+    },
+    "sourcePublicationCheck": {
+      "candidateFiles": 127,
+      "exitCode": 0
+    },
+    "githubYamlFilesParsed": 6,
+    "brokenRelativeMarkdownLinks": 0,
+    "previousFilesPreserved": 125,
+    "onlyDocumentationAndProvenanceJsonChanged": true,
+    "standardLicenseSha256": "ffcca38841adb694b6f380647e15f17c446a4d1656fed51a1e2041d064c94cc8",
+    "independentLicenseAndSecurityWordingReview": "passed; no required substantive corrections",
+    "finalArchiveByteVerification": "Recorded in external delivery manifest and verification after this source record is finalized."
+  },
+  "externalActions": {
+    "pushed": false,
+    "visibilityChanged": false,
+    "releaseCreated": false,
+    "privateVulnerabilityReportingEnabled": false,
+    "applicationSubmitted": false
+  },
+  "currentRepositoryUpdateSupersededBy": "2026-10-21-private-update.json",
+  "historicalStageRecord": true
+}

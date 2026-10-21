@@ -17,7 +17,9 @@ function handler(req,res){
     if(decoded.includes('\\')||decoded.includes('\0')||(!publicFiles.has(relative)&&!source)){
       res.writeHead(403);return res.end('Forbidden');
     }
-    const file=path.resolve(root,relative);
+    // Fresh source packages use the anonymous demo template until a local config exists.
+    const fallback=relative==='config.js'&&!fs.existsSync(path.join(root,'config.js'));
+    const file=path.resolve(root,fallback?'config.example.js':relative);
     if(!fs.existsSync(file)){res.writeHead(404);return res.end('Not found');}
     if(!fs.realpathSync(file).startsWith(fs.realpathSync(root)+path.sep)){res.writeHead(403);return res.end('Forbidden');}
     const stat=fs.statSync(file);
