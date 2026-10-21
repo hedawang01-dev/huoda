@@ -3,7 +3,7 @@ const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
 const dist=path.join(root,'dist');
-const required=['index.html','config.js','app.js','style.css','responsive.css','status.css','THIRD_PARTY_NOTICES.md','admin/index.html','admin/adminService.js','admin/admin.js','vendor/supabase-2.57.4.js','src/core/bootstrap.js','src/services/accountService.js','src/services/reportService.js'];
+const required=['LICENSE','index.html','config.js','app.js','style.css','responsive.css','status.css','THIRD_PARTY_NOTICES.md','admin/index.html','admin/adminService.js','admin/admin.js','vendor/supabase-2.57.4.js','src/core/bootstrap.js','src/services/accountService.js','src/services/reportService.js'];
 const forbidden=['supabase.sql','tests','scripts','node_modules','.git','.env','package.json','supabase/functions'];
 const failures=[];
 

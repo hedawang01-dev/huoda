@@ -1,0 +1,67 @@
+{
+  "checked_on": "2026-10-21",
+  "timezone": "Asia/Shanghai",
+  "source_package_version": "0.5.4",
+  "source_commit": "071de19",
+  "runtime": {
+    "node": "22.14.0",
+    "npm": "10.9.2",
+    "browser": "locally installed Google Chrome"
+  },
+  "install": {
+    "command": "npm ci --ignore-scripts",
+    "exit_code": 0,
+    "packages_added": 19
+  },
+  "syntax": {
+    "command": "npm run check",
+    "exit_code": 0,
+    "javascript_files": 50
+  },
+  "test": {
+    "command": "npm test",
+    "exit_code": 0,
+    "tests": 81,
+    "passed": 81,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 74758.1001
+  },
+  "build_demo": {
+    "command": "npm run build:demo",
+    "exit_code": 0,
+    "public_files": 33
+  },
+  "verify_dist": {
+    "command": "npm run verify:dist",
+    "exit_code": 0
+  },
+  "dependency_audit": {
+    "command": "npm audit --audit-level=high",
+    "exit_code": 0,
+    "total_known_vulnerabilities": 0
+  },
+  "security_scan": {
+    "original_files": 93,
+    "reachable_commits": 5,
+    "reachable_objects": 244,
+    "reachable_blobs": 181,
+    "extra_unreachable_blobs": 1,
+    "confirmed_live_secrets_found": 0,
+    "current_personal_paths_redacted": 3
+  },
+  "not_verified": [
+    "live Supabase/PostGIS/Auth/Realtime/Storage/Edge Function",
+    "Vercel and public deployment",
+    "physical-device acceptance",
+    "live-concurrency.cjs (writes isolated test records)",
+    "remote GitHub Actions",
+    "full WCAG or screen-reader acceptance",
+    "public repository visibility and human maintainer identity"
+  ],
+  "readiness": "resolve listed blockers before considering publication",
+  "licensing": "UNLICENSED pending owner confirmation",
+  "no_external_publication": true,
+  "evidence_scope": "Initial preparation before noncommercial license update; retained as historical evidence.",
+  "superseded_by": "2026-10-21-noncommercial.json"
+}

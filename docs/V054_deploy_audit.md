@@ -4,7 +4,7 @@
 
 审计日期：2026-09-12
 
-审计对象：`C:/Users/h'x'c/Desktop/兼职平台开发/huoda_v050`
+审计对象：`huoda_v050/（关联历史目录）`
 
 基线：`v5.3-stable`，commit `6a95a0a0fda1d341b2555e11e82f1bdfeaea8436`
 范围：只读检查与部署规划；本文件是本审计线程唯一写入。未修改业务代码，未创建或修改 GitHub、Vercel、Supabase 外部项目，未执行部署。

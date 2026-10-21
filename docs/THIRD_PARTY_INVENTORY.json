@@ -1,0 +1,483 @@
+{
+  "checkedOn": "2026-10-21",
+  "scope": "Retained main lock including Supabase CLI and optional platform packages; npm packages are not bundled in source snapshots.",
+  "lockEntryCount": 35,
+  "installedCount": 27,
+  "bundledSdk": {
+    "path": "vendor/supabase-2.57.4.js",
+    "sha256": "7e94b62086deecef8c0ba3b38f514e2a1944ff6c81d92fb3ff967828c406c38f",
+    "matchesInstalledOfficialUmd": true
+  },
+  "licenseSectionsMatchedIgnoringLineEndings": [
+    "node_modules/@supabase/auth-js/LICENSE",
+    "node_modules/@supabase/functions-js/LICENSE",
+    "node_modules/@supabase/node-fetch/LICENSE.md",
+    "node_modules/@supabase/postgrest-js/LICENSE",
+    "node_modules/@supabase/realtime-js/LICENSE.md",
+    "node_modules/@supabase/storage-js/LICENSE",
+    "node_modules/@supabase/supabase-js/LICENSE",
+    "node_modules/ws/LICENSE",
+    "node_modules/whatwg-url/LICENSE.txt",
+    "node_modules/webidl-conversions/LICENSE.md"
+  ],
+  "media": {
+    "screenshots": [
+      "docs/images/demo-desktop.png",
+      "docs/images/demo-mobile.png"
+    ],
+    "source": "Anonymous local-demo browser captures; no production users or external stock media.",
+    "fonts": "CSS system fonts only; no font files distributed.",
+    "ownershipConfirmation": "Maintainer stated on 2026-10-21 that project-created code and materials were AI-assisted outputs; see AI_PROVENANCE.md for scope and applicable-terms limits. This is not an independent originality, copyrightability or trademark determination."
+  },
+  "dependencies": [
+    {
+      "name": "@ecies/ciphers",
+      "version": "0.2.6",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@ecies/ciphers/LICENSE",
+          "sha256": "34f85f5d41bc28cd790bf7d11be0f3478980cb5f75b49fda3c33667429d0e7f4",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@electric-sql/pglite",
+      "version": "0.3.14",
+      "declaredLicense": "Apache-2.0",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@electric-sql/pglite/LICENSE",
+          "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+          "detectedText": "Apache-2.0"
+        }
+      ]
+    },
+    {
+      "name": "@noble/ciphers",
+      "version": "1.3.0",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@noble/ciphers/LICENSE",
+          "sha256": "f36671a5487c9c5050efacb58011c37c24c55a889803cb036cf9d9a6347c1e2d",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@noble/curves",
+      "version": "1.9.7",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@noble/curves/LICENSE",
+          "sha256": "4f221aee6e072336700c408c68ab3b96a3fc09f6aebe6f48f1bd99e5ef13faec",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@noble/hashes",
+      "version": "1.8.0",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@noble/hashes/LICENSE",
+          "sha256": "4f221aee6e072336700c408c68ab3b96a3fc09f6aebe6f48f1bd99e5ef13faec",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@playwright/test",
+      "version": "1.55.1",
+      "declaredLicense": "Apache-2.0",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@playwright/test/LICENSE",
+          "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb",
+          "detectedText": "Apache-2.0"
+        },
+        {
+          "path": "node_modules/@playwright/test/NOTICE",
+          "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d",
+          "detectedText": "notice or other text"
+        }
+      ]
+    },
+    {
+      "name": "@supabase/auth-js",
+      "version": "2.71.1",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/auth-js/LICENSE",
+          "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@supabase/cli-darwin-arm64",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-darwin-x64",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-linux-arm64",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-linux-arm64-musl",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-linux-x64",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-linux-x64-musl",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-windows-arm64",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "@supabase/cli-windows-x64",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": []
+    },
+    {
+      "name": "@supabase/functions-js",
+      "version": "2.4.6",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/functions-js/LICENSE",
+          "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@supabase/node-fetch",
+      "version": "2.6.15",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/node-fetch/LICENSE.md",
+          "sha256": "84eaa985e1ef71b8c630e8aba73404c219ff425c6fdb45c62e998b58d4fbdc8e",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@supabase/postgrest-js",
+      "version": "1.21.4",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/postgrest-js/LICENSE",
+          "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@supabase/realtime-js",
+      "version": "2.15.5",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/realtime-js/LICENSE.md",
+          "sha256": "400341ae19d1175be5313b721687f2b1d6b974ecafcbea35c8cf872bc77aa514",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@supabase/storage-js",
+      "version": "2.12.1",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/storage-js/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "detectedText": "Apache-2.0"
+        }
+      ],
+      "note": "Metadata says MIT; distributed LICENSE is Apache-2.0 and preserved in vendor/DEPENDENCY_LICENSES.txt."
+    },
+    {
+      "name": "@supabase/supabase-js",
+      "version": "2.57.4",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@supabase/supabase-js/LICENSE",
+          "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@types/node",
+      "version": "22.20.2",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@types/node/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@types/phoenix",
+      "version": "1.6.7",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@types/phoenix/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "@types/ws",
+      "version": "8.18.1",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/@types/ws/LICENSE",
+          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "eciesjs",
+      "version": "0.5.0",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/eciesjs/LICENSE",
+          "sha256": "34f85f5d41bc28cd790bf7d11be0f3478980cb5f75b49fda3c33667429d0e7f4",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "fsevents",
+      "version": "2.3.2",
+      "declaredLicense": "MIT",
+      "optional": true,
+      "installedOnThisWindowsHost": false,
+      "licenseFiles": [],
+      "note": "Optional platform package not installed on this Windows host; license text not independently checked here."
+    },
+    {
+      "name": "jose",
+      "version": "6.2.12",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/jose/LICENSE.md",
+          "sha256": "8078b0829d6c3e9ecde2f003e1966e4cad3efc6e7a640efbab0313cc166b1af1",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "playwright",
+      "version": "1.55.1",
+      "declaredLicense": "Apache-2.0",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/playwright/LICENSE",
+          "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb",
+          "detectedText": "Apache-2.0"
+        },
+        {
+          "path": "node_modules/playwright/NOTICE",
+          "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d",
+          "detectedText": "notice or other text"
+        }
+      ]
+    },
+    {
+      "name": "playwright-core",
+      "version": "1.55.1",
+      "declaredLicense": "Apache-2.0",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/playwright-core/LICENSE",
+          "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb",
+          "detectedText": "Apache-2.0"
+        },
+        {
+          "path": "node_modules/playwright-core/NOTICE",
+          "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d",
+          "detectedText": "notice or other text"
+        }
+      ]
+    },
+    {
+      "name": "supabase",
+      "version": "2.117.0",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": []
+    },
+    {
+      "name": "tr46",
+      "version": "0.0.3",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [],
+      "note": "No standalone license/notice in installed package; node_modules is not distributed in source snapshots."
+    },
+    {
+      "name": "undici-types",
+      "version": "6.21.0",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/undici-types/LICENSE",
+          "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "webidl-conversions",
+      "version": "3.0.1",
+      "declaredLicense": "BSD-2-Clause",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/webidl-conversions/LICENSE.md",
+          "sha256": "a889cc4dbee2ae172c179856b25d75b0b7a5a136e1b97109b9b590b2ff1a879c",
+          "detectedText": "BSD-2-Clause"
+        }
+      ]
+    },
+    {
+      "name": "whatwg-url",
+      "version": "5.0.0",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/whatwg-url/LICENSE.txt",
+          "sha256": "6b7a1792144374d84dc5ed3655b8bbe2754d06f4f1f64a9fb8b9de2d6f448b85",
+          "detectedText": "MIT"
+        }
+      ]
+    },
+    {
+      "name": "ws",
+      "version": "8.21.3",
+      "declaredLicense": "MIT",
+      "optional": false,
+      "installedOnThisWindowsHost": true,
+      "licenseFiles": [
+        {
+          "path": "node_modules/ws/LICENSE",
+          "sha256": "2b29dcfe0d6471f7e8c92c5fb38c9f93edee10330937055440192f1832b1ecef",
+          "detectedText": "MIT"
+        }
+      ]
+    }
+  ]
+}

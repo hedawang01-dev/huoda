@@ -1,0 +1,67 @@
+{
+  "checkedOn": "2026-10-21",
+  "scope": "Integrated private repository update, no public release",
+  "version": "0.5.4",
+  "baseCommit": "94754e1fd6555b08ab246b46595b29fce1526130",
+  "maintainerAuthorizedPrivateRepositoryUpdate": true,
+  "repositoryVisibilityMustRemain": "private",
+  "preservedMainImprovements": [
+    "CLI base migration and identical root SQL",
+    "Seven ordered migration transactions and check:migrations",
+    "Supabase CLI 2.117.0 with original complete locked transitive dependencies",
+    "cloud-fixture detects CLI base and avoids duplicate initialization"
+  ],
+  "syntax": {
+    "javascriptFiles": 53,
+    "exitCode": 0
+  },
+  "migrations": {
+    "orderedTransactions": 7,
+    "tables": 12,
+    "policyNames": 27,
+    "functionNames": 34,
+    "exitCode": 0
+  },
+  "fullTests": {
+    "tests": 92,
+    "pass": 92,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 75779.6713,
+    "exitCode": 0
+  },
+  "publicationRegression": {
+    "tests": 11,
+    "passed": 11,
+    "failed": 0,
+    "metadataLeakRedObserved": true
+  },
+  "dependencyInstallation": {
+    "installedPackages": 27,
+    "lockEntries": 35,
+    "ignoreScripts": true,
+    "exitCode": 0
+  },
+  "dependencyAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "build": {
+    "mode": "explicit local-demo",
+    "publicFiles": 34,
+    "verifyDistExitCode": 0
+  },
+  "githubActions": "Check the repository workflow runs for actual remote execution; local results do not imply remote success.",
+  "oldHistoricalPersonalPaths": "Retained in old commits; current source anonymized. Owner reviews history before manually making the repository public.",
+  "historyRewritten": false,
+  "productionDatabaseTouched": false,
+  "publicReleaseCreated": false,
+  "visibilityChangeAuthorized": false,
+  "finalPublicDecision": "Owner acts manually",
+  "sourceManifest": "Generated outside tracked source to avoid self-hash cycles."
+}

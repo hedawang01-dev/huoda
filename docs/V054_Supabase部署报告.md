@@ -1,5 +1,7 @@
 # 活搭 HUODA 5.4 Supabase 部署报告
 
+> 2026-09-12 历史部署记录，随 94754e1 保留；当前私有仓库更新没有重连云端验证这些状态。
+
 日期：2026-09-12
 项目：huoda
 Project Ref：`qzhlyuqwsmpirofwjxko`

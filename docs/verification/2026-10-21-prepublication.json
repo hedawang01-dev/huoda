@@ -1,0 +1,134 @@
+{
+  "checkedOn": "2026-10-21",
+  "timezone": "Asia/Shanghai",
+  "scope": "Local source-publication preparation; no external publication",
+  "runtime": {
+    "node": "22.14.0",
+    "npm": "10.9.2",
+    "os": "Windows",
+    "browser": "Installed Google Chrome, headless"
+  },
+  "classification": "noncommercial source-available; not OSI open source",
+  "license": {
+    "spdx": "PolyForm-Noncommercial-1.0.0",
+    "canonicalSha256": "ffcca38841adb694b6f380647e15f17c446a4d1656fed51a1e2041d064c94cc8",
+    "officialTextUnchanged": true
+  },
+  "syntax": {
+    "javascriptFiles": 52,
+    "exitCode": 0
+  },
+  "fullTests": {
+    "tests": 91,
+    "pass": 91,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 75465.231,
+    "exitCode": 0
+  },
+  "publicationTests": {
+    "tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "cliRedObserved": {
+      "tests": 10,
+      "passed": 8,
+      "failed": 2
+    }
+  },
+  "cleanCandidate": {
+    "npmCi": "--ignore-scripts --offline using previously downloaded locked npm cache",
+    "installedPackages": 19,
+    "exitCode": 0,
+    "targetedTests": {
+      "tests": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "smoke": {
+      "cleanInstall": true,
+      "installedPackages": 19,
+      "checks": "passed",
+      "browser": "installed Chrome, headless",
+      "routes": [
+        {
+          "route": "/",
+          "status": 200
+        },
+        {
+          "route": "/#/profile",
+          "status": 200
+        },
+        {
+          "route": "/admin/",
+          "status": 200
+        },
+        {
+          "route": "/.env",
+          "status": 403
+        },
+        {
+          "route": "/supabase.sql",
+          "status": 403
+        },
+        {
+          "route": "/scripts/publication.cjs",
+          "status": 403
+        }
+      ],
+      "pageErrors": [],
+      "privateConfigCreated": false,
+      "productionServicesUsed": false
+    },
+    "syntaxFiles": 52,
+    "demoBuildFiles": 34,
+    "verifyDistExitCode": 0
+  },
+  "dependencyAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "githubYaml": {
+    "files": 6,
+    "localParse": "passed",
+    "remoteExecution": false
+  },
+  "preservation": {
+    "beforeFiles": 113,
+    "missingOriginalFiles": [],
+    "protectedBusinessAndVendorFilesCompared": 42,
+    "protectedFilesChanged": []
+  },
+  "thirdPartyInventory": "../THIRD_PARTY_INVENTORY.json",
+  "remoteEvidence": "2026-10-21-github.json",
+  "remainingHumanInputs": [
+    "Confirmed private security reception channel",
+    "Rights to project-owned code, branding and original materials",
+    "Final publication repository, history scope and personal approval"
+  ],
+  "notVerified": [
+    "Real Supabase/PostGIS/Auth/Storage/Realtime/Edge Function and production concurrency",
+    "Public deployment and physical devices",
+    "Full accessibility/screen-reader and cross-engine acceptance",
+    "Acceptance of restricted license under Codex for Open Source"
+  ],
+  "remoteActions": {
+    "pushed": false,
+    "visibilityChanged": false,
+    "releaseCreated": false,
+    "applicationSubmitted": false
+  },
+  "historyIncludedInCandidate": false,
+  "sourceFileCountsAndRawHashes": "Generated external MANIFEST.json is the final package inventory; generated after this record to avoid self-hash cycles.",
+  "recordStatus": "Historical engineering test record. Subsequent AI-origin information supersedes remainingHumanInputs and channel requirements; executable source unchanged.",
+  "currentStatusSupersededBy": "2026-10-21-ai-origin.json",
+  "currentRepositoryUpdateSupersededBy": "2026-10-21-private-update.json",
+  "historicalStageRecord": true
+}

@@ -1,5 +1,7 @@
 # 活搭 HUODA 5.4 交付状态 · 2026-09-12
 
+> 历史交付快照（2026-09-12），所列测试数量与服务状态不代表本次验证。当前结果请看根目录 OPEN_SOURCE_READINESS_REPORT.md。
+
 ## 已完成
 
 - [x] 5.3 源码备份、SHA 清单、Git commit 与 v5.3-stable tag。
