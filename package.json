@@ -16,7 +16,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",
     "@playwright/test": "^1.55.1",
-    "supabase": "^2.117.0"
+    "supabase": "^2.122.0"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4"
